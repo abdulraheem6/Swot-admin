@@ -1,160 +1,393 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ads Admin</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ads Admin — Advanced</title>
   <style>
-    body { font-family: system-ui, -apple-system, Arial; max-width: 900px; margin: 32px auto; padding: 0 16px; }
-    textarea { width:100%; height:140px; font-family: monospace; }
-    input, select, button { padding:8px; margin:4px 0; }
-    .ad { border:1px solid #ddd; padding:8px; margin:8px 0; }
-    .small { font-size: 0.9em; color: #444; }
+    :root{--bg:#f7f8fa;--card:#fff;--muted:#6b7280;--accent:#1f6feb;--danger:#ef4444}
+    body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0;background:var(--bg);color:#0f172a}
+    header{background:linear-gradient(90deg,#0ea5e9, #6366f1);color:#fff;padding:20px 28px;display:flex;align-items:center;justify-content:space-between}
+    header h1{margin:0;font-size:18px}
+    header .status{font-size:13px;opacity:.95}
+    main{max-width:1100px;margin:24px auto;padding:0 20px}
+    .card{background:var(--card);border-radius:10px;padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(15,23,42,0.04)}
+    .grid{display:grid;grid-template-columns:320px 1fr;gap:16px}
+
+    /* login */
+    .login-center{max-width:420px;margin:36px auto;text-align:center}
+    .input,select,textarea{width:100%;padding:10px;border:1px solid #e6e9ee;border-radius:8px;font-size:14px}
+    .row{display:flex;gap:8px}
+    button{background:var(--accent);color:white;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+    button.secondary{background:#e6eefc;color:var(--accent)}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid rgba(31,111,235,.12)}
+
+    /* left panel */
+    .panel-title{font-weight:600;margin-bottom:8px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* ads list */
+    .controls{display:flex;gap:8px;align-items:center}
+    .search{flex:1}
+    .ads-list{margin-top:12px}
+    .ad-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;border:1px solid #f1f5f9;margin-bottom:8px}
+    .ad-thumb{width:80px;height:60px;background:#f3f4f6;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .ad-meta{flex:1}
+    .ad-actions{display:flex;gap:6px}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3}
+
+    /* form */
+    .form-group{margin-bottom:10px}
+    .field-row{display:flex;gap:8px}
+    .field-row .input{flex:1}
+    textarea{min-height:80px}
+    .hint{font-size:12px;color:#6b7280}
+
+    footer{max-width:1100px;margin:18px auto;padding:0 20px;color:#94a3b8;font-size:13px}
+
+    @media(max-width:880px){.grid{grid-template-columns:1fr}.ad-thumb{display:none}}
   </style>
 </head>
 <body>
-  <h1>Ads Admin</h1>
-  <div>
-    <label>Admin token: <input id="token" type="password" placeholder="x-admin-token"/></label>
-  </div>
-  <div>
-    <label>City: 
-      <select id="city">
-        <option value="global">global</option>
-        <option value="nizamabad">nizamabad</option>
-        <option value="warangal">warangal</option>
-      </select>
-    </label>
-    <button id="load">Load</button>
-    <button id="create-sample">Create sample if empty</button>
-  </div>
+  <header>
+    <h1>Ads Admin — Advanced</h1>
+    <div class="status">Server: <span id="serverDomain">-</span></div>
+  </header>
 
-  <div id="doc-area"></div>
+  <main id="app">
+    <!-- login card -->
+    <div id="loginRoot" class="card login-center" style="display:none">
+      <h2>Admin login</h2>
+      <p class="small">Enter the admin token (kept in Pages env as ADMIN_TOKEN). Token is stored in local session only.</p>
+      <div style="margin:12px 0">
+        <input id="tokenInput" class="input" placeholder="Enter admin token" />
+      </div>
+      <div class="row" style="justify-content:center">
+        <button id="loginBtn">Sign in</button>
+        <button id="fillDemo" class="secondary">Fill demo token</button>
+      </div>
+      <p class="small" style="margin-top:10px">Tip: The token will be sent as header <code>x-admin-token</code> or <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+    </div>
 
-  <h2>Add new ad (JSON)</h2>
-  <p class="small">Paste one ad object only (will be given an id automatically if missing). Example fields: id, type, title, subtitle, description, mediaUrl, actionUrl, actionLabel, sponsorTag, badgeText, isDismissible, locationInfo, rating</p>
-  <textarea id="newAd" placeholder='{"type":"banner","title":"My ad","subtitle":"sub"}'></textarea>
-  <div><button id="addAd">Add Ad</button></div>
+    <!-- main dashboard -->
+    <div id="mainRoot" style="display:none">
+      <div class="grid">
+        <div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div class="panel-title">Manage Cities</div>
+                <div class="small">Select a city to edit its ad list</div>
+              </div>
+              <div style="text-align:right">
+                <button id="logoutBtn" class="ghost">Logout</button>
+              </div>
+            </div>
 
-  <script>
-    const tokenInput = document.getElementById('token');
-    const citySel = document.getElementById('city');
-    const loadBtn = document.getElementById('load');
-    const docArea = document.getElementById('doc-area');
-    const newAdTextarea = document.getElementById('newAd');
-    const addAdBtn = document.getElementById('addAd');
-    const createSampleBtn = document.getElementById('create-sample');
+            <div style="margin-top:12px">
+              <label for="citySelect">City</label>
+              <select id="citySelect" class="input"></select>
+            </div>
 
-    function getHeaders() {
-      const t = tokenInput.value.trim();
-      return { 'Content-Type': 'application/json', 'x-admin-token': t };
-    }
+            <div style="margin-top:12px">
+              <label>Quick actions</label>
+              <div class="row">
+                <button id="loadCityBtn">Load</button>
+                <button id="createSampleBtn" class="secondary">Create sample</button>
+                <button id="exportBtn" class="secondary">Export JSON</button>
+                <button id="importBtn" class="ghost">Import JSON</button>
+              </div>
+            </div>
 
-    async function loadCity() {
-      const city = citySel.value;
-      const res = await fetch(`/admin/ads/${city}`, { headers: getHeaders() });
-      if (!res.ok) {
-        docArea.innerHTML = `<div style="color:red">Error ${res.status}: ${await res.text()}</div>`;
-        return;
-      }
-      const doc = await res.json();
-      renderDoc(doc);
-    }
+            <div style="margin-top:12px">
+              <label>Search / Filter</label>
+              <div class="controls">
+                <input id="searchInput" class="input search" placeholder="Search by id, title, type..." />
+                <select id="typeFilter" class="input" style="width:140px">
+                  <option value="">All types</option>
+                  <option value="banner">Banner</option>
+                  <option value="photo">Photo</option>
+                  <option value="video">Video</option>
+                </select>
+              </div>
+            </div>
 
-    function renderDoc(doc) {
-      docArea.innerHTML = '';
-      const pre = document.createElement('pre');
-      pre.textContent = JSON.stringify(doc, null, 2);
-      docArea.appendChild(pre);
+          </div>
 
-      if (Array.isArray(doc.ads)) {
-        doc.ads.forEach(ad => {
-          const div = document.createElement('div');
-          div.className = 'ad';
-          div.innerHTML = `<strong>${ad.title || ad.id || 'untitled'}</strong> <div class="small">type: ${ad.type || '-'} id: ${ad.id || '-'}</div>
-            <div>${ad.subtitle ? ad.subtitle : ''}</div>
-            <div style="margin-top:6px">
-              <button data-id="${ad.id}" class="del">Delete</button>
-              <button data-id="${ad.id}" class="edit">Edit (open JSON)</button>
-            </div>`;
-          docArea.appendChild(div);
-        });
-        // delete handlers
-        docArea.querySelectorAll('.del').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            if (!confirm('Delete ad?')) return;
-            const id = btn.dataset.id;
-            const city = citySel.value;
-            const res = await fetch(`/admin/ads/${city}?id=${encodeURIComponent(id)}`, { method:'DELETE', headers: getHeaders() });
-            if (!res.ok) return alert('Delete failed ' + await res.text());
-            alert('Deleted');
-            loadCity();
-          });
-        });
-        docArea.querySelectorAll('.edit').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const id = btn.dataset.id;
-            const city = citySel.value;
-            const res = await fetch(`/admin/ads/${city}`, { headers: getHeaders() });
-            const doc = await res.json();
-            const ad = doc.ads.find(a => String(a.id) === String(id));
-            if (!ad) return alert('not found');
-            newAdTextarea.value = JSON.stringify(ad, null, 2);
-            addAdBtn.textContent = 'Save changes (PUT)';
-            addAdBtn.dataset.editId = id;
-          });
-        });
-      }
-    }
+          <div class="card">
+            <div class="panel-title">Ads List</div>
+            <div class="small">Click an ad to edit. Use the checkboxes for bulk delete.</div>
 
-    loadBtn.addEventListener('click', loadCity);
+            <div id="adsList" class="ads-list"></div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button id="bulkDeleteBtn" class="danger" style="background:var(--danger)">Delete selected</button>
+              <div id="bulkCount" class="small">0 selected</div>
+            </div>
+          </div>
+        </div>
 
-    addAdBtn.addEventListener('click', async () => {
-      const city = citySel.value;
-      let ad;
-      try { ad = JSON.parse(newAdTextarea.value); } catch (e) { return alert('Invalid JSON'); }
-      const editId = addAdBtn.dataset.editId;
-      if (editId) {
-        const res = await fetch(`/admin/ads/${city}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ id: editId, ad }) });
-        if (!res.ok) return alert('Update failed: ' + await res.text());
-        addAdBtn.textContent = 'Add Ad';
-        delete addAdBtn.dataset.editId;
-        newAdTextarea.value = '';
-        loadCity();
-        return;
-      }
-      const res = await fetch(`/admin/ads/${city}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ad }) });
-      if (!res.ok) return alert('Add failed: ' + await res.text());
-      newAdTextarea.value = '';
-      loadCity();
-    });
+        <div>
+          <div class="card">
+            <div class="panel-title">Ad Editor</div>
+            <div class="small">Create or edit an ad. Fields change with type selection.</div>
 
-    createSampleBtn.addEventListener('click', async () => {
-      const city = citySel.value;
-      const sample = {
-        enabled: true,
-        ads: [
-          {
-            id: `sample-${Date.now()}`,
-            type: "banner",
-            title: "Sample Ad for " + city,
-            subtitle: "Tap to learn more",
-            description: "Sample ad created by admin UI",
-            mediaUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80",
-            actionUrl: "https://example.com",
-            actionLabel: "Visit",
-            sponsorTag: "Sample",
-            badgeText: "NEW",
-            isDismissible: true,
-            locationInfo: city,
-            rating: 4.5
-          }
-        ]
-      };
-      const res = await fetch(`/admin/ads/${city}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ad: sample.ads[0] }) });
-      if (!res.ok) return alert('Failed: ' + await res.text());
-      loadCity();
-    });
-  </script>
+            <div style="margin-top:12px">
+              <div class="form-group">
+                <label>Operation</label>
+                <select id="operationSelect" class="input"><option value="create">Create new</option><option value="edit">Edit existing</option></select>
+              </div>
+
+              <div class="form-group">
+                <label>Ad Type</label>
+                <select id="adType" class="input"><option value="banner">Banner</option><option value="photo">Photo</option><option value="video">Video</option></select>
+              </div>
+
+              <div class="form-group">
+                <label>ID (optional)</label>
+                <input id="adId" class="input" placeholder="auto-generated if empty" />
+              </div>
+
+              <div class="form-group">
+                <label>Title</label>
+                <input id="adTitle" class="input" />
+              </div>
+
+              <div class="form-group">
+                <label>Subtitle</label>
+                <input id="adSubtitle" class="input" />
+              </div>
+
+              <div class="form-group">
+                <label>Description</label>
+                <textarea id="adDesc" class="input"></textarea>
+              </div>
+
+              <div class="form-group field-row">
+                <div style="flex:1">
+                  <label>Media URL</label>
+                  <input id="adMedia" class="input" placeholder="https://..." />
+                </div>
+                <div style="width:120px">
+                  <label>Rating</label>
+                  <input id="adRating" class="input" type="number" min="0" max="5" step="0.1" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Action URL</label>
+                <input id="adAction" class="input" placeholder="https://..." />
+              </div>
+
+              <div class="form-group field-row">
+                <div style="flex:1">
+                  <label>Action Label</label>
+                  <input id="adActionLabel" class="input" />
+                </div>
+                <div style="width:160px">
+                  <label>Badge Text</label>
+                  <input id="adBadge" class="input" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Targeting JSON (optional)</label>
+                <textarea id="adTargeting" class="input" placeholder='{"minAppVersion":"1.2.0","countries":["IN"]}'></textarea>
+              </div>
+
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <button id="saveAdBtn">Save Ad</button>
+                <button id="resetBtn" class="secondary">Reset</button>
+                <button id="previewBtn" class="ghost">Preview</button>
+              </div>
+
+              <div id="formMsg" class="small" style="margin-top:8px;color:#065f46"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="panel-title">Preview</div>
+            <div id="previewArea" class="small">Select an ad and click Preview to see a simple rendering.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>Built for Cloudflare Pages. Make sure ADMIN_TOKEN and ADS_KV are set in Pages project settings.</footer>
+
+<script>
+// Minimal advanced admin UI JS (vanilla)
+const DOMAIN = location.origin;
+const state = {token:null, city:'global', doc:null, selected: new Set(), ads: []};
+
+// DOM refs
+const loginRoot = document.getElementById('loginRoot');
+const mainRoot = document.getElementById('mainRoot');
+const tokenInput = document.getElementById('tokenInput');
+const loginBtn = document.getElementById('loginBtn');
+const fillDemo = document.getElementById('fillDemo');
+const logoutBtn = document.getElementById('logoutBtn');
+const serverDomain = document.getElementById('serverDomain');
+const citySelect = document.getElementById('citySelect');
+const loadCityBtn = document.getElementById('loadCityBtn');
+const createSampleBtn = document.getElementById('createSampleBtn');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const adsList = document.getElementById('adsList');
+const searchInput = document.getElementById('searchInput');
+const typeFilter = document.getElementById('typeFilter');
+const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+const bulkCount = document.getElementById('bulkCount');
+
+// form
+const operationSelect = document.getElementById('operationSelect');
+const adType = document.getElementById('adType');
+const adId = document.getElementById('adId');
+const adTitle = document.getElementById('adTitle');
+const adSubtitle = document.getElementById('adSubtitle');
+const adDesc = document.getElementById('adDesc');
+const adMedia = document.getElementById('adMedia');
+const adRating = document.getElementById('adRating');
+const adAction = document.getElementById('adAction');
+const adActionLabel = document.getElementById('adActionLabel');
+const adBadge = document.getElementById('adBadge');
+const adTargeting = document.getElementById('adTargeting');
+const saveAdBtn = document.getElementById('saveAdBtn');
+const resetBtn = document.getElementById('resetBtn');
+const previewBtn = document.getElementById('previewBtn');
+const previewArea = document.getElementById('previewArea');
+const formMsg = document.getElementById('formMsg');
+
+function headers() {
+  const h = {'Content-Type':'application/json'};
+  if (state.token) h['x-admin-token'] = state.token;
+  return h;
+}
+
+function showLogin(){ loginRoot.style.display='block'; mainRoot.style.display='none'; serverDomain.textContent = DOMAIN; }
+function showMain(){ loginRoot.style.display='none'; mainRoot.style.display='block'; serverDomain.textContent = DOMAIN; }
+
+function saveToken(t){ state.token = t; sessionStorage.setItem('ads_admin_token', t); }
+function clearToken(){ state.token = null; sessionStorage.removeItem('ads_admin_token'); }
+
+// init
+(function(){
+  const saved = sessionStorage.getItem('ads_admin_token');
+  if (saved) { saveToken(saved); showMain(); loadCities(); loadCity(state.city); }
+  else showLogin();
+})();
+
+loginBtn.addEventListener('click', ()=>{
+  const t = tokenInput.value.trim(); if (!t) return alert('Enter token'); saveToken(t); showMain(); loadCities(); loadCity('global'); });
+fillDemo.addEventListener('click', ()=>{ tokenInput.value='{{ADMIN_TOKEN}}'; }); // helpful placeholder
+logoutBtn.addEventListener('click', ()=>{ clearToken(); showLogin(); });
+
+// city management
+async function loadCities(){ // we have a small list; you can extend dynamically
+  const list = ['global','nizamabad','warangal'];
+  citySelect.innerHTML = list.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+loadCityBtn.addEventListener('click', ()=>{ loadCity(citySelect.value); });
+createSampleBtn.addEventListener('click', ()=>createSample(citySelect.value));
+exportBtn.addEventListener('click', ()=>{
+  const txt = JSON.stringify(state.doc,null,2); const blob = new Blob([txt],{type:'application/json'}); const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`${state.city || 'city'}.json`; a.click();
+});
+importBtn.addEventListener('click', async ()=>{
+  const txt = prompt('Paste JSON document for this city (will replace existing)');
+  if (!txt) return;
+  try{ const doc = JSON.parse(txt); await writeDoc(state.city, doc); alert('Imported'); loadCity(state.city);}catch(e){alert('Invalid JSON')}
+});
+
+// fetch/load
+async function loadCity(city='global'){
+  state.city = city;
+  formMsg.textContent='';
+  adsList.innerHTML = '<div class="small">Loading...</div>';
+  try{
+    const res = await fetch(`/admin/ads/${city}`, {headers:headers()});
+    if (res.status===401){ alert('Unauthorized: check ADMIN_TOKEN in Pages env and token you entered'); clearToken(); showLogin(); return; }
+    if (!res.ok) throw new Error(await res.text());
+    const doc = await res.json(); state.doc = doc; state.ads = Array.isArray(doc.ads)?doc.ads:[]; renderAds();
+  }catch(err){ adsList.innerHTML = `<div class="small" style="color:#b91c1c">Error loading: ${err.message}</div>`; }
+}
+
+function renderAds(){
+  const q = (searchInput.value||'').toLowerCase(); const t = typeFilter.value;
+  const filtered = state.ads.filter(a=>{
+    if (t && a.type!==t) return false;
+    if (!q) return true;
+    return (a.id||'').toLowerCase().includes(q) || (a.title||'').toLowerCase().includes(q) || (a.subtitle||'').toLowerCase().includes(q);
+  });
+  if (filtered.length===0) adsList.innerHTML='<div class="small">No ads</div>';
+  else adsList.innerHTML = filtered.map(adCard).join('');
+  // attach listeners
+  document.querySelectorAll('.ad-edit').forEach(btn=>btn.addEventListener('click', e=>{ const id=e.target.dataset.id; openEdit(id); }));
+  document.querySelectorAll('.ad-del').forEach(btn=>btn.addEventListener('click', async e=>{ if(!confirm('Delete ad?')) return; const id=e.target.dataset.id; await deleteAd(id); }));
+  document.querySelectorAll('.ad-check').forEach(ch=>ch.addEventListener('change', e=>{ const id=e.target.dataset.id; if(e.target.checked) state.selected.add(id); else state.selected.delete(id); bulkCount.textContent = state.selected.size+' selected'; }));
+}
+
+function adCard(ad){
+  const thumb = ad.mediaUrl?`<img src="${escapeHtml(ad.mediaUrl)}" style="width:100%;height:100%;object-fit:cover">`:'<div class="small">No image</div>';
+  return `<div class="ad-item">
+    <input type="checkbox" class="ad-check" data-id="${escapeHtml(ad.id||'')}">
+    <div class="ad-thumb">${thumb}</div>
+    <div class="ad-meta"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>${escapeHtml(ad.title||ad.id||'untitled')}</strong><div class="small">${escapeHtml(ad.subtitle||'')}</div></div><div><div class="pill">${escapeHtml(ad.type||'')}</div></div></div></div>
+    <div class="ad-actions"><button class="ad-edit" data-id="${escapeHtml(ad.id||'')}">Edit</button><button class="ad-del" data-id="${escapeHtml(ad.id||'')}">Delete</button></div>
+  </div>`;
+}
+
+searchInput.addEventListener('input', renderAds);
+typeFilter.addEventListener('change', renderAds);
+
+bulkDeleteBtn.addEventListener('click', async ()=>{
+  if (state.selected.size===0) return alert('No selection');
+  if (!confirm(`Delete ${state.selected.size} ads?`)) return;
+  for (const id of Array.from(state.selected)) { await deleteAd(id); }
+  state.selected.clear(); bulkCount.textContent='0 selected'; loadCity(state.city);
+});
+
+// CRUD helpers
+async function writeDoc(city, doc){ const res = await fetch(`/admin/ads/${city}`, {method:'PUT', headers:headers(), body: JSON.stringify({ id:'__replace__', ad: doc })}); /* not used */ }
+
+async function createSample(city){ const sample = { enabled:true, ads:[{ id:`sample-${Date.now()}`, type:'banner', title:`Sample for ${city}`, subtitle:'Demo', description:'Created by admin', mediaUrl:'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80', actionUrl:'https://example.com', actionLabel:'Visit', sponsorTag:'Demo', badgeText:'NEW', isDismissible:true, locationInfo:city, rating:4.5 }] };
+  // POST the single ad
+  const ad = sample.ads[0];
+  try{ const res = await fetch(`/admin/ads/${city}`, {method:'POST', headers:headers(), body: JSON.stringify({ad})}); if (!res.ok) throw new Error(await res.text()); alert('Sample ad added'); loadCity(city);}catch(e){alert('Error: '+e.message)} }
+
+async function deleteAd(id){ try{ const res = await fetch(`/admin/ads/${state.city}?id=${encodeURIComponent(id)}`, {method:'DELETE', headers:headers()}); if (!res.ok) throw new Error(await res.text()); return true;}catch(e){ alert('Delete failed: '+e.message); return false; } }
+
+function openEdit(id){ const ad = state.ads.find(a=>String(a.id)===String(id)); if(!ad) return alert('ad not found'); operationSelect.value='edit'; adType.value=ad.type||'banner'; adId.value=ad.id||''; adTitle.value=ad.title||''; adSubtitle.value=ad.subtitle||''; adDesc.value=ad.description||''; adMedia.value=ad.mediaUrl||''; adRating.value=ad.rating||''; adAction.value=ad.actionUrl||''; adActionLabel.value=ad.actionLabel||''; adBadge.value=ad.badgeText||''; adTargeting.value = JSON.stringify(ad.targeting||ad.meta||{},null,2); window.scrollTo({top:0,behavior:'smooth'}); }
+
+resetBtn.addEventListener('click', ()=>{ operationSelect.value='create'; adId.value=''; adType.value='banner'; adTitle.value=''; adSubtitle.value=''; adDesc.value=''; adMedia.value=''; adRating.value=''; adAction.value=''; adActionLabel.value=''; adBadge.value=''; adTargeting.value=''; formMsg.textContent=''; });
+
+previewBtn.addEventListener('click', ()=>{ const ad = collectForm(); previewArea.innerHTML = renderPreview(ad); });
+
+function renderPreview(ad){ return `<div style="padding:8px"><strong>${escapeHtml(ad.title||'Untitled')}</strong><div class="small">${escapeHtml(ad.subtitle||'')}</div><div style="margin-top:8px">${ad.mediaUrl?`<img src="${escapeHtml(ad.mediaUrl)}" style="max-width:100%;height:auto;border-radius:8px">`:'<div class="small">No media</div>'}</div><div style="margin-top:8px">${escapeHtml(ad.description||'')}</div><div style="margin-top:8px"><a href="${escapeHtml(ad.actionUrl||'#')}" target="_blank"><button>${escapeHtml(ad.actionLabel||'Open')}</button></a></div></div>`; }
+
+function collectForm(){ let targeting = {}; try{ if (adTargeting.value.trim()) targeting = JSON.parse(adTargeting.value); }catch(e){ alert('Invalid targeting JSON'); }
+  return { id: adId.value||undefined, type: adType.value, title: adTitle.value, subtitle: adSubtitle.value, description: adDesc.value, mediaUrl: adMedia.value, rating: adRating.value?Number(adRating.value):undefined, actionUrl: adAction.value, actionLabel: adActionLabel.value, badgeText: adBadge.value, targeting } }
+
+saveAdBtn.addEventListener('click', async ()=>{
+  const ad = collectForm(); if (!ad.title) return alert('Title required');
+  if (operationSelect.value==='create'){
+    // POST
+    try{ const res = await fetch(`/admin/ads/${state.city}`, {method:'POST', headers:headers(), body: JSON.stringify({ad})}); if (!res.ok) throw new Error(await res.text()); const created = await res.json(); formMsg.textContent='Ad created: '+(created.id||''); loadCity(state.city); }catch(e){ alert('Create failed: '+e.message); }
+  } else {
+    if (!ad.id) return alert('ID required for edit');
+    try{ const res = await fetch(`/admin/ads/${state.city}`, {method:'PUT', headers:headers(), body: JSON.stringify({id:ad.id, ad})}); if (!res.ok) throw new Error(await res.text()); const upd = await res.json(); formMsg.textContent='Ad updated'; loadCity(state.city); }catch(e){ alert('Update failed: '+e.message); }
+  }
+});
+
+// helpers
+function escapeHtml(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// expose some debug helpers
+window._adsAdmin = { state, loadCity, loadCities };
+
+</script>
 </body>
 </html>
