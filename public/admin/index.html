@@ -1,0 +1,160 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Ads Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Arial; max-width: 900px; margin: 32px auto; padding: 0 16px; }
+    textarea { width:100%; height:140px; font-family: monospace; }
+    input, select, button { padding:8px; margin:4px 0; }
+    .ad { border:1px solid #ddd; padding:8px; margin:8px 0; }
+    .small { font-size: 0.9em; color: #444; }
+  </style>
+</head>
+<body>
+  <h1>Ads Admin</h1>
+  <div>
+    <label>Admin token: <input id="token" type="password" placeholder="x-admin-token"/></label>
+  </div>
+  <div>
+    <label>City: 
+      <select id="city">
+        <option value="global">global</option>
+        <option value="nizamabad">nizamabad</option>
+        <option value="warangal">warangal</option>
+      </select>
+    </label>
+    <button id="load">Load</button>
+    <button id="create-sample">Create sample if empty</button>
+  </div>
+
+  <div id="doc-area"></div>
+
+  <h2>Add new ad (JSON)</h2>
+  <p class="small">Paste one ad object only (will be given an id automatically if missing). Example fields: id, type, title, subtitle, description, mediaUrl, actionUrl, actionLabel, sponsorTag, badgeText, isDismissible, locationInfo, rating</p>
+  <textarea id="newAd" placeholder='{"type":"banner","title":"My ad","subtitle":"sub"}'></textarea>
+  <div><button id="addAd">Add Ad</button></div>
+
+  <script>
+    const tokenInput = document.getElementById('token');
+    const citySel = document.getElementById('city');
+    const loadBtn = document.getElementById('load');
+    const docArea = document.getElementById('doc-area');
+    const newAdTextarea = document.getElementById('newAd');
+    const addAdBtn = document.getElementById('addAd');
+    const createSampleBtn = document.getElementById('create-sample');
+
+    function getHeaders() {
+      const t = tokenInput.value.trim();
+      return { 'Content-Type': 'application/json', 'x-admin-token': t };
+    }
+
+    async function loadCity() {
+      const city = citySel.value;
+      const res = await fetch(`/admin/ads/${city}`, { headers: getHeaders() });
+      if (!res.ok) {
+        docArea.innerHTML = `<div style="color:red">Error ${res.status}: ${await res.text()}</div>`;
+        return;
+      }
+      const doc = await res.json();
+      renderDoc(doc);
+    }
+
+    function renderDoc(doc) {
+      docArea.innerHTML = '';
+      const pre = document.createElement('pre');
+      pre.textContent = JSON.stringify(doc, null, 2);
+      docArea.appendChild(pre);
+
+      if (Array.isArray(doc.ads)) {
+        doc.ads.forEach(ad => {
+          const div = document.createElement('div');
+          div.className = 'ad';
+          div.innerHTML = `<strong>${ad.title || ad.id || 'untitled'}</strong> <div class="small">type: ${ad.type || '-'} id: ${ad.id || '-'}</div>
+            <div>${ad.subtitle ? ad.subtitle : ''}</div>
+            <div style="margin-top:6px">
+              <button data-id="${ad.id}" class="del">Delete</button>
+              <button data-id="${ad.id}" class="edit">Edit (open JSON)</button>
+            </div>`;
+          docArea.appendChild(div);
+        });
+        // delete handlers
+        docArea.querySelectorAll('.del').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Delete ad?')) return;
+            const id = btn.dataset.id;
+            const city = citySel.value;
+            const res = await fetch(`/admin/ads/${city}?id=${encodeURIComponent(id)}`, { method:'DELETE', headers: getHeaders() });
+            if (!res.ok) return alert('Delete failed ' + await res.text());
+            alert('Deleted');
+            loadCity();
+          });
+        });
+        docArea.querySelectorAll('.edit').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.id;
+            const city = citySel.value;
+            const res = await fetch(`/admin/ads/${city}`, { headers: getHeaders() });
+            const doc = await res.json();
+            const ad = doc.ads.find(a => String(a.id) === String(id));
+            if (!ad) return alert('not found');
+            newAdTextarea.value = JSON.stringify(ad, null, 2);
+            addAdBtn.textContent = 'Save changes (PUT)';
+            addAdBtn.dataset.editId = id;
+          });
+        });
+      }
+    }
+
+    loadBtn.addEventListener('click', loadCity);
+
+    addAdBtn.addEventListener('click', async () => {
+      const city = citySel.value;
+      let ad;
+      try { ad = JSON.parse(newAdTextarea.value); } catch (e) { return alert('Invalid JSON'); }
+      const editId = addAdBtn.dataset.editId;
+      if (editId) {
+        const res = await fetch(`/admin/ads/${city}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify({ id: editId, ad }) });
+        if (!res.ok) return alert('Update failed: ' + await res.text());
+        addAdBtn.textContent = 'Add Ad';
+        delete addAdBtn.dataset.editId;
+        newAdTextarea.value = '';
+        loadCity();
+        return;
+      }
+      const res = await fetch(`/admin/ads/${city}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ad }) });
+      if (!res.ok) return alert('Add failed: ' + await res.text());
+      newAdTextarea.value = '';
+      loadCity();
+    });
+
+    createSampleBtn.addEventListener('click', async () => {
+      const city = citySel.value;
+      const sample = {
+        enabled: true,
+        ads: [
+          {
+            id: `sample-${Date.now()}`,
+            type: "banner",
+            title: "Sample Ad for " + city,
+            subtitle: "Tap to learn more",
+            description: "Sample ad created by admin UI",
+            mediaUrl: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80",
+            actionUrl: "https://example.com",
+            actionLabel: "Visit",
+            sponsorTag: "Sample",
+            badgeText: "NEW",
+            isDismissible: true,
+            locationInfo: city,
+            rating: 4.5
+          }
+        ]
+      };
+      const res = await fetch(`/admin/ads/${city}`, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ad: sample.ads[0] }) });
+      if (!res.ok) return alert('Failed: ' + await res.text());
+      loadCity();
+    });
+  </script>
+</body>
+</html>
