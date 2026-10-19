@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Ads Admin — Advanced</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root{--bg:#f7f8fa;--card:#fff;--muted:#6b7280;--accent:#1f6feb;--danger:#ef4444}
     body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0;background:var(--bg);color:#0f172a}
@@ -209,6 +209,22 @@
             <div class="panel-title">Preview</div>
             <div id="previewArea" class="small">Select an ad and click Preview to see a simple rendering.</div>
           </div>
+
+          <div class="card">
+            <div class="panel-title">Raw JSON (full document)</div>
+            <div class="small">View or edit the full city document. Use Import to paste JSON or click "Fetch" then edit and Save to perform a full replace.</div>
+            <div style="margin-top:8px">
+              <div style="display:flex;gap:8px">
+                <button id="fetchRawBtn" class="secondary">Fetch</button>
+                <button id="saveRawBtn" class="secondary">Save Full Document</button>
+                <button id="validateRawBtn" class="ghost">Validate</button>
+              </div>
+              <div style="margin-top:8px">
+                <textarea id="rawDoc" class="input" style="min-height:200px"></textarea>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -260,6 +276,11 @@ const previewBtn = document.getElementById('previewBtn');
 const previewArea = document.getElementById('previewArea');
 const formMsg = document.getElementById('formMsg');
 
+const rawDoc = document.getElementById('rawDoc');
+const fetchRawBtn = document.getElementById('fetchRawBtn');
+const saveRawBtn = document.getElementById('saveRawBtn');
+const validateRawBtn = document.getElementById('validateRawBtn');
+
 function headers() {
   const h = {'Content-Type':'application/json'};
   if (state.token) h['x-admin-token'] = state.token;
@@ -279,8 +300,7 @@ function clearToken(){ state.token = null; sessionStorage.removeItem('ads_admin_
   else showLogin();
 })();
 
-loginBtn.addEventListener('click', ()=>{
-  const t = tokenInput.value.trim(); if (!t) return alert('Enter token'); saveToken(t); showMain(); loadCities(); loadCity('global'); });
+loginBtn.addEventListener('click', ()=>{ const t = tokenInput.value.trim(); if (!t) return alert('Enter token'); saveToken(t); showMain(); loadCities(); loadCity('global'); });
 fillDemo.addEventListener('click', ()=>{ tokenInput.value='{{ADMIN_TOKEN}}'; }); // helpful placeholder
 logoutBtn.addEventListener('click', ()=>{ clearToken(); showLogin(); });
 
@@ -311,7 +331,7 @@ async function loadCity(city='global'){
     const res = await fetch(`/admin/ads/${city}`, {headers:headers()});
     if (res.status===401){ alert('Unauthorized: check ADMIN_TOKEN in Pages env and token you entered'); clearToken(); showLogin(); return; }
     if (!res.ok) throw new Error(await res.text());
-    const doc = await res.json(); state.doc = doc; state.ads = Array.isArray(doc.ads)?doc.ads:[]; renderAds();
+    const doc = await res.json(); state.doc = doc; state.ads = Array.isArray(doc.ads)?doc.ads:[]; rawDoc.value = JSON.stringify(doc, null, 2); renderAds();
   }catch(err){ adsList.innerHTML = `<div class="small" style="color:#b91c1c">Error loading: ${err.message}</div>`; }
 }
 
@@ -351,10 +371,13 @@ bulkDeleteBtn.addEventListener('click', async ()=>{
 });
 
 // CRUD helpers
-async function writeDoc(city, doc){ const res = await fetch(`/admin/ads/${city}`, {method:'PUT', headers:headers(), body: JSON.stringify({ id:'__replace__', ad: doc })}); /* not used */ }
+async function writeDoc(city, doc){
+  const res = await fetch(`/admin/ads/${city}`, {method:'PUT', headers:headers(), body: JSON.stringify({ doc })});
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
 
 async function createSample(city){ const sample = { enabled:true, ads:[{ id:`sample-${Date.now()}`, type:'banner', title:`Sample for ${city}`, subtitle:'Demo', description:'Created by admin', mediaUrl:'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80', actionUrl:'https://example.com', actionLabel:'Visit', sponsorTag:'Demo', badgeText:'NEW', isDismissible:true, locationInfo:city, rating:4.5 }] };
-  // POST the single ad
   const ad = sample.ads[0];
   try{ const res = await fetch(`/admin/ads/${city}`, {method:'POST', headers:headers(), body: JSON.stringify({ad})}); if (!res.ok) throw new Error(await res.text()); alert('Sample ad added'); loadCity(city);}catch(e){alert('Error: '+e.message)} }
 
@@ -374,12 +397,26 @@ function collectForm(){ let targeting = {}; try{ if (adTargeting.value.trim()) t
 saveAdBtn.addEventListener('click', async ()=>{
   const ad = collectForm(); if (!ad.title) return alert('Title required');
   if (operationSelect.value==='create'){
-    // POST
     try{ const res = await fetch(`/admin/ads/${state.city}`, {method:'POST', headers:headers(), body: JSON.stringify({ad})}); if (!res.ok) throw new Error(await res.text()); const created = await res.json(); formMsg.textContent='Ad created: '+(created.id||''); loadCity(state.city); }catch(e){ alert('Create failed: '+e.message); }
   } else {
     if (!ad.id) return alert('ID required for edit');
     try{ const res = await fetch(`/admin/ads/${state.city}`, {method:'PUT', headers:headers(), body: JSON.stringify({id:ad.id, ad})}); if (!res.ok) throw new Error(await res.text()); const upd = await res.json(); formMsg.textContent='Ad updated'; loadCity(state.city); }catch(e){ alert('Update failed: '+e.message); }
   }
+});
+
+// raw doc handlers
+fetchRawBtn.addEventListener('click', ()=>{ if (state.doc) rawDoc.value = JSON.stringify(state.doc, null, 2); else loadCity(state.city); });
+saveRawBtn.addEventListener('click', async ()=>{
+  try{
+    const parsed = JSON.parse(rawDoc.value);
+    await writeDoc(state.city, parsed);
+    alert('Saved full document');
+    loadCity(state.city);
+  }catch(e){ alert('Invalid JSON or save failed: '+e.message); }
+});
+validateRawBtn.addEventListener('click', async ()=>{
+  // client-side validation could be added here by fetching schema from /admin/schema
+  alert('Client-side validation not implemented in this build. Server validation will run on save.');
 });
 
 // helpers

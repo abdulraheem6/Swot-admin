@@ -1,0 +1,26 @@
+{
+  "city": "Nizamabad",
+  "scope": "city",
+  "enabled": true,
+  "createdAt": "2026-10-19T08:00:00Z",
+  "updatedAt": "2026-10-19T08:00:00Z",
+  "createdBy": "ads-admin",
+  "approvalStatus": "approved",
+  "ads": [
+    {
+      "id": "nzb_banner_01",
+      "type": "banner",
+      "title": "Nizamabad Fresh Organic Farm Mart",
+      "subtitle": "Farm fresh spices, cold-pressed oils & grains directly from Armoor & Bodhan farms.",
+      "description": "Get same-day door delivery across Nizamabad town. Special 25% launch discount on your first grocery basket.",
+      "mediaUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+      "actionUrl": "https://example.com/nizamabad-mart",
+      "actionLabel": "Order Now",
+      "sponsorTag": "Sponsored · Nizamabad",
+      "badgeText": "25% OFF",
+      "isDismissible": true,
+      "locationInfo": "Khaleelwadi, Nizamabad",
+      "rating": 4.8
+    }
+  ]
+}
