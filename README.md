@@ -1,131 +1,50 @@
-# Ads Manager — Cloudflare Pages (pages/ads-admin)
+# Swot-admin — Ads Admin & Worker
 
-This branch adds a lightweight ads manager built on Cloudflare Pages + Pages Functions + Workers KV. It serves per-city JSON files for mobile apps and provides a small admin UI + admin API for editing ads.
+This branch adds an enhanced admin UI and a Cloudflare Worker-backed admin API to manage city-scoped and global ad JSON documents.
 
-Repository
-- Repo: https://github.com/abdulraheem6/Swot-admin
-- Branch with changes: `pages/ads-admin`
+What was added
 
-What this project provides
-- Public reader endpoints (no auth):
-  - GET /ads/<city>.json (e.g. `/ads/global.json`, `/ads/nizamabad.json`)
-  - Implemented at `functions/ads/[city].json.js` — uses edge cache (caches.default), ETag, and Cache-Control headers.
-- Admin API (protected by secret):
-  - /admin/ads/<city> (GET, POST, PUT, DELETE)
-  - Implemented at `functions/admin/ads/[city].js` — requires `ADMIN_TOKEN` (see setup).
-  - On writes the admin function updates KV and attempts to prime the public edge cache so readers see updates immediately.
-- Admin UI: static single-file UI at `public/admin/index.html` — calls the admin API using `x-admin-token` or `Authorization: Bearer <token>`.
+- public/admin/index.html — improved admin UI with:
+  - city selection, ads list, editor, preview
+  - raw JSON editor (fetch & save full document)
+  - import/export and bulk delete
+  - token-based admin authentication (x-admin-token header)
 
-Design principles and recommended workflow
-- Pull-based client model: Android apps should fetch `/ads/global.json` and `/ads/<city>.json` and cache locally. Use `If-None-Match` with ETag to avoid downloading unchanged payloads.
-- Keep JSON small and host media (images/videos) on a CDN / R2.
-- Enable aggressive edge caching (s-maxage) so Cloudflare edge serves most client requests without hitting KV.
-- Protect admin routes — use `ADMIN_TOKEN` for initial setup and migrate to Cloudflare Access (SSO) for production.
+- worker/index.js — Cloudflare Worker implementing an admin API:
+  - GET /admin/ads/{city} — fetch full JSON document (returns ETag)
+  - PUT /admin/ads/{city} — replace full document (body: { doc }) or update single ad (body: { id, ad })
+  - POST /admin/ads/{city} — append single ad (body: { ad })
+  - DELETE /admin/ads/{city}?id=... — delete ad by id
+  - Uses KV namespace binding: ADS_KV
+  - Admin auth via ADMIN_TOKEN secret (compare to x-admin-token or Bearer token)
 
-Setup (step-by-step)
-1. Create the Cloudflare Pages project
-   - In the Cloudflare Dashboard → Pages → Create a project.
-   - Connect the project to this GitHub repo and select branch `pages/ads-admin`.
-   - Build settings are not required for Pages Functions only, but keep the defaults if prompted.
+- schema/ads.schema.json — JSON Schema (draft-07) for the ads document (superset fields). The Worker currently stores and serves the schema file; client-side validation can be added.
 
-2. Create a Workers KV namespace
-   - Cloudflare Dashboard → Workers → KV → Create namespace.
-   - Give it a friendly name (e.g., `ads-kv-namespace`).
+- scripts/example_kv_seed.json — example content you can seed into KV.
 
-3. Bind the KV namespace to Pages
-   - Pages project → Functions → Variables & Secrets → KV Namespace Bindings → Add binding
-     - Variable name: `ADS_KV`
-     - Namespace: select the namespace you created
+Deployment notes
 
-4. Add the admin secret (ADMIN_TOKEN)
-   - Pages project → Functions → Variables & Secrets → Environment Variables & Secrets → Add secret
-     - Key: `ADMIN_TOKEN`
-     - Value: a strong random secret (do NOT commit this to git)
-   - The admin UI sends this token in the `x-admin-token` header or `Authorization: Bearer <token>`.
+1) Cloudflare Pages + Functions or Workers
 
-5. Deploy the Pages site
-   - Trigger a deploy in Pages (the repo/branch is already connected so Pages will build). After deployment, your Pages domain will host:
-     - `https://<your-pages-domain>/ads/global.json`
-     - `https://<your-pages-domain>/ads/nizamabad.json`
-     - `https://<your-pages-domain>/admin/`
+- Host the static admin UI (public/) on Cloudflare Pages.
+- Deploy the worker (worker/index.js) as a Pages Function or a separate Worker and add a route to match /admin/ads/*.
 
-6. (Optional) Add a custom domain
-   - Pages → Custom domains → Add domain (e.g. `mycloudpfarepages.dev`)
-   - Follow the DNS instructions Cloudflare provides. Once added, the same endpoints will be available at your custom domain.
+2) KV and secrets
 
-Example curl commands (replace <DOMAIN> and <ADMIN_TOKEN>)
-- Public read (no auth):
-  curl -i https://<DOMAIN>/ads/nizamabad.json
+- Create a KV namespace and bind it as ADS_KV to the Worker / Pages Function.
+- Add a secret ADMIN_TOKEN in Pages/Workers environment (this is the admin token to use in the UI).
 
-- Admin GET:
-  curl -i -H "x-admin-token: <ADMIN_TOKEN>" https://<DOMAIN>/admin/ads/nizamabad
+3) Routes
 
-- Add an ad (POST):
-  curl -i -X POST -H "Content-Type: application/json" -H "x-admin-token: <ADMIN_TOKEN>" \
-    -d '{"ad": {"type":"banner","title":"Farm Mart","subtitle":"25% off","description":"Local offer","mediaUrl":"https://example.com/img.jpg","actionUrl":"https://example.com","actionLabel":"Order Now","sponsorTag":"Local","badgeText":"25% OFF","isDismissible":true,"locationInfo":"Nizamabad","rating":4.8}}' \
-    https://<DOMAIN>/admin/ads/nizamabad
+- Configure the Worker route for your Pages site (e.g., example.com/admin/ads/*) or deploy the Worker with a Worker subdomain.
 
-- Update an ad (PUT):
-  curl -i -X PUT -H "Content-Type: application/json" -H "x-admin-token: <ADMIN_TOKEN>" \
-    -d '{"id":"<ad-id>","ad":{"title":"Updated title","rating":4.9}}' \
-    https://<DOMAIN>/admin/ads/nizamabad
+4) Android client
 
-- Delete an ad (DELETE):
-  curl -i -X DELETE -H "x-admin-token: <ADMIN_TOKEN>" "https://<DOMAIN>/admin/ads/nizamabad?id=<ad-id>"
+- Use GET /admin/ads?scope=city&city=Nizamabad or GET /admin/ads/{city} (depending on routing) and use ETag header for caching and If-None-Match for 304 handling.
 
-Seeding KV with initial data
-- Option A: Use the admin UI once deployed to create sample ads (Admin UI → Create sample).
-- Option B: Use Cloudflare CLI (wrangler) or API to write keys directly to KV. Example using Wrangler local runtime (or in Workers):
-  - `wrangler kv:namespace create "ads-kv-namespace"` (if you use wrangler for local dev)
-  - Or use the Cloudflare dashboard to edit KV keys manually.
+Next steps
 
-Notes about caching, ETag, and client behavior
-- The public reader sets these headers:
-  - `Cache-Control: public, max-age=60, s-maxage=86400, stale-while-revalidate=86400`
-  - `ETag: "<sha256>"`
-- Clients should:
-  - Store the last JSON and ETag locally.
-  - Use `If-None-Match` header on subsequent requests; handle `304 Not Modified` by keeping local JSON.
-  - Refresh on app cold start and then periodically (e.g., every 6–24 hours depending on how often ads change).
-  - On receiving a push-notification signal (optional), perform a conditional GET to update immediately.
+- (Recommended) Add AJV validation in both the admin UI and the Worker to validate payloads against schema/ads.schema.json.
+- (Recommended) Add optimistic concurrency with revisions/If-Match to avoid accidental overwrites.
+- Add CI that validates example JSON using the schema on PRs.
 
-Compression and bandwidth
-- Cloudflare serves compressed responses (brotli/gzip) automatically when clients support it. Keep JSON compact. Host large media on R2 or a CDN instead of embedding them.
-
-Admin protection: ADMIN_TOKEN vs Cloudflare Access
-- ADMIN_TOKEN (current implementation)
-  - Quick to set up. Admin API and UI require this secret.
-  - Store the token only in Pages secrets; never commit it.
-- Cloudflare Access (recommended for production)
-  - Replace or augment ADMIN_TOKEN by protecting the `/admin/*` path with Cloudflare Access (SSO, JWT). This avoids sharing a static token and integrates with your identity provider.
-
-Priming the cache after admin writes
-- The admin function attempts to prime the edge cache for `/ads/<city>.json` after writing to KV. KV is eventually consistent; priming reduces the window where readers might see stale data.
-
-Android client best practices (summary)
-1. Pull-based fetch with conditional GET (If-None-Match + ETag).
-2. Local cache for offline and immediate display.
-3. Background refresh schedule (e.g., 6–24h) and on-app-start refresh.
-4. Batch impression/click events and upload periodically.
-5. Enforce local frequency caps and consent checks.
-6. Verify payload integrity optionally using an HMAC signature if you require tamper detection.
-
-Optional: FCM signaling for near-real-time updates
-- Use FCM only as a lightweight signal (topic message) telling devices to refresh — do NOT send full JSON via push.
-- On admin update, publish a topic message (e.g., `city_nizamabad`) and devices subscribed to that topic will perform a conditional GET.
-- Implement topic publishing in a secure backend (do not expose FCM server credentials in client-side code). The admin Pages function could trigger a server webhook that performs the FCM publish.
-
-Monitoring and observability
-- Monitor Pages/Workers analytics (edge request counts, cache hit ratio, bandwidth) from the Cloudflare dashboard.
-- Measure origin (KV) read counts and tune `s-maxage` to reduce origin hits.
-
-Merging and next steps
-- If you want this merged into your repository default branch, open a PR from `pages/ads-admin` → `main` (or your default branch). I can open a PR for you if you want.
-- Next optional work I can do for you:
-  - Seed KV with sample JSON for multiple cities (scripted),
-  - Add a `/track` endpoint for batched impressions/clicks,
-  - Add server-side FCM publishing integration (secure webhook + sample code),
-  - Provide an Android sample (Kotlin) showing conditional GET + local caching + batching.
-
-Contact
-- If you want me to open a PR updating `README.md` in this branch with further edits, or to perform any of the next steps above, tell me which action to take and I will proceed.
