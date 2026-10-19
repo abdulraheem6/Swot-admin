@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="utf-8" />
+  <title>Swot Ads Cloud — Dynamic Ad Engine & Android API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              200: '#b9ddfd',
+              300: '#7cc2fb',
+              400: '#36a2f7',
+              500: '#0c87eb',
+              600: '#006bc9',
+              700: '#0155a3',
+              800: '#064986',
+              900: '#0b3d6f',
+              950: '#07274a',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+    ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 1); }
+
+    .phone-glass {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ad-card-hover {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .ad-card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(14, 165, 233, 0.15);
+    }
+
+    .video-thumbnail-badge {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white bg-slate-950 text-slate-100 antialiased overflow-x-hidden">
+
+  <!-- ================= TOP NAVIGATION ================= -->
+  <header class="border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-sky-500/20 text-white font-black text-xl">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              SWOT ADS ENGINE
+              <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30">
+                Edge KV
+              </span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Cloudflare Pages & KV Ad Server for Android</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions & Status -->
+      <div class="flex items-center gap-2.5">
+        <!-- Live Connection Pill -->
+        <div id="connectionPill" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="connectionText">Edge Connected</span>
+        </div>
+
+        <!-- Android API Hub Button -->
+        <button id="btnOpenApiHub" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span>Android API</span>
+        </button>
+
+        <!-- Raw JSON Modal Button -->
+        <button id="btnOpenRawJson" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
+          <i data-lucide="code-2" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span>Raw JSON</span>
+        </button>
+
+        <!-- Save to Cloudflare KV Button -->
+        <button id="btnSaveToCloud" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 transition shadow-md shadow-sky-500/20 active:scale-95">
+          <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+          <span>Sync to Cloud</span>
+        </button>
+
+        <!-- Settings Button -->
+        <button id="btnOpenSettings" title="Configure Cloudflare Token" class="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ================= DYNAMIC CITY / SCOPE SWITCHER BAR ================= -->
+  <div class="border-b border-slate-800 bg-slate-900/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        
+        <!-- City Tabs Scrollable Container -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none" id="cityTabsContainer">
+          <!-- Rendered dynamically in JS -->
+        </div>
+
+        <!-- Master Switch & Quick URL Copy -->
+        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t border-slate-800/80 lg:border-t-0">
+          
+          <!-- Master Scope Toggle -->
+          <div class="flex items-center gap-2.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70">
+            <span class="text-xs text-slate-300 font-medium">Serving Ads:</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cityEnabledToggle" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+            <span id="cityEnabledLabel" class="text-xs font-semibold text-emerald-400">ACTIVE</span>
+          </div>
+
+          <!-- Direct Endpoint Pill -->
+          <div class="flex items-center gap-1.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70 text-xs">
+            <span class="text-slate-400 font-mono text-[11px] truncate max-w-[170px] sm:max-w-[240px]" id="endpointDisplay">
+              /ads/global.json
+            </span>
+            <button id="btnCopyEndpoint" title="Copy Android JSON Endpoint" class="p-1 text-slate-400 hover:text-sky-400 transition">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            </button>
+            <a id="btnTestEndpoint" href="/ads/global.json" target="_blank" title="Open JSON in New Tab" class="p-1 text-slate-400 hover:text-indigo-400 transition">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN DASHBOARD BODY ================= -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- ================= LEFT: ADS MANAGER (8 COLS) ================= -->
+      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
+        
+        <!-- Controls & Filter Toolbar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            
+            <!-- Search & Filters -->
+            <div class="flex flex-1 items-center gap-2">
+              <div class="relative flex-1">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                <input id="searchInput" type="text" placeholder="Search ads by title, ID, tag, location..." 
+                  class="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition" />
+              </div>
+
+              <!-- Type Filter -->
+              <select id="typeFilter" class="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                <option value="">All Types</option>
+                <option value="banner">📌 Banner</option>
+                <option value="photo">🖼️ Photo</option>
+                <option value="video">🎬 Video</option>
+              </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2">
+              <!-- New Ad Button -->
+              <button id="btnOpenNewAdModal" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md shadow-sky-500/20 transition active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>New Ad</span>
+              </button>
+
+              <!-- Quick Presets Dropdown -->
+              <div class="relative inline-block text-left">
+                <button id="btnQuickPresets" class="p-2 rounded-xl text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 transition" title="Preset & Seed Actions">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                </button>
+                <div id="presetsMenu" class="hidden absolute right-0 mt-2 w-56 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-1.5 z-30 text-xs">
+                  <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Demo Datasets</div>
+                  <button id="btnLoadGlobalSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-sky-400"></i>
+                    <span>Load Global Cloud Ads</span>
+                  </button>
+                  <button id="btnLoadNzbSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Load Nizamabad 3-Ad Set</span>
+                  </button>
+                  <div class="my-1 border-t border-slate-800"></div>
+                  <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Document Actions</div>
+                  <button id="btnExportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                    <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-400"></i>
+                    <span>Export City JSON</span>
+                  </button>
+                  <button id="btnImportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                    <i data-lucide="upload" class="w-3.5 h-3.5 text-purple-400"></i>
+                    <span>Import / Paste JSON</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Ads List Header & Bulk Operations -->
+        <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+          <div class="flex items-center gap-2 font-medium">
+            <span id="adCountDisplay">0 Ads</span>
+            <span class="text-slate-600">•</span>
+            <span id="cityScopeBadge" class="text-slate-300 font-mono">scope: global</span>
+          </div>
+
+          <div id="bulkActions" class="hidden items-center gap-2">
+            <span id="selectedCount" class="text-slate-400">0 selected</span>
+            <button id="btnBulkDelete" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition">
+              Delete Selected
+            </button>
+          </div>
+        </div>
+
+        <!-- Ads Cards List -->
+        <div id="adsContainer" class="flex flex-col gap-3">
+          <!-- Rendered dynamically -->
+        </div>
+
+      </div>
+
+      <!-- ================= RIGHT: LIVE ANDROID SIMULATOR (5 COLS) ================= -->
+      <div class="lg:col-span-5 xl:col-span-4">
+        <div class="sticky top-24 flex flex-col items-center">
+          
+          <div class="w-full flex items-center justify-between mb-3 px-1">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-300">
+              <i data-lucide="smartphone" class="w-4 h-4 text-sky-400"></i>
+              <span>Live Android Device Simulator</span>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono" id="previewModeTitle">
+              Interactive Feed
+            </div>
+          </div>
+
+          <!-- Realistic Android Mockup Frame -->
+          <div class="w-[340px] h-[670px] bg-slate-900 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative flex flex-col select-none ring-1 ring-slate-700/50">
+            
+            <!-- Camera Punch-Hole Notch -->
+            <div class="absolute top-5 left-1/2 -translate-x-1/2 w-4 h-4 bg-black rounded-full z-30 border border-slate-800 flex items-center justify-center">
+              <div class="w-1.5 h-1.5 rounded-full bg-slate-900/80"></div>
+            </div>
+
+            <!-- Phone Speaker Ear-piece -->
+            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-14 h-1 bg-slate-800 rounded-full z-20"></div>
+
+            <!-- Phone Screen Area -->
+            <div class="w-full h-full bg-slate-950 rounded-[34px] overflow-hidden flex flex-col relative border border-slate-800/80">
+              
+              <!-- Android Status Bar -->
+              <div class="h-8 bg-slate-950/90 text-slate-300 px-6 flex items-center justify-between text-[11px] font-semibold shrink-0 z-20">
+                <span id="androidClock">20:40</span>
+                <div class="flex items-center gap-1.5 text-slate-400 text-[10px]">
+                  <span>5G</span>
+                  <i data-lucide="wifi" class="w-3 h-3"></i>
+                  <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
+                </div>
+              </div>
+
+              <!-- Android App Bar -->
+              <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                  <div class="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs">
+                    S
+                  </div>
+                  <span class="text-xs font-bold text-white tracking-tight">Swot App</span>
+                </div>
+                <div class="flex items-center gap-2 text-slate-400">
+                  <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+                  <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
+                    U
+                  </div>
+                </div>
+              </div>
+
+              <!-- Android App Scrollable Feed -->
+              <div class="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 scrollbar-none" id="androidFeedContainer">
+                
+                <!-- Mock Top Story Card -->
+                <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      📰
+                    </div>
+                    <span class="text-[11px] font-medium text-slate-300">Daily Updates</span>
+                    <span class="text-[10px] text-slate-500 ml-auto">10m ago</span>
+                  </div>
+                  <p class="text-slate-400 text-[11px] leading-relaxed">
+                    Swipe down to test your served ads inside this simulated Android app feed.
+                  </p>
+                </div>
+
+                <!-- AD INJECTION CONTAINER -->
+                <div id="simulatedAdMount" class="transition-all duration-300">
+                  <!-- Live Ad rendered here -->
+                </div>
+
+                <!-- Mock Bottom Post Card -->
+                <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
+                  <div class="flex items-center gap-2 mb-2">
+                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                      ⚡
+                    </div>
+                    <span class="text-[11px] font-medium text-slate-300">Local Discoveries</span>
+                    <span class="text-[10px] text-slate-500 ml-auto">Just now</span>
+                  </div>
+                  <p class="text-slate-400 text-[11px] leading-relaxed">
+                    Personalized recommendations and community announcements appear here.
+                  </p>
+                </div>
+
+              </div>
+
+              <!-- Android Bottom Navigation Pill -->
+              <div class="h-6 bg-slate-950 flex items-center justify-center shrink-0">
+                <div class="w-24 h-1 bg-slate-700 rounded-full"></div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="mt-3 text-center">
+            <span class="text-[11px] text-slate-500">Live preview matches your Android app's UI rendering</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ================= MODAL: ADD / EDIT AD ================= -->
+  <div id="adModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8 transform transition-all">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+        <div>
+          <h2 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
+            Create New Ad
+          </h2>
+          <p class="text-xs text-slate-400" id="modalSubtitle">Adding ad to current scope</p>
+        </div>
+        <button id="btnCloseModal" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body Form -->
+      <form id="adForm" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        <input type="hidden" id="formMode" value="create" />
+        <input type="hidden" id="formOriginalId" value="" />
+
+        <!-- 1. Ad Type Selector -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+            Select Ad Format
+          </label>
+          <div class="grid grid-cols-3 gap-3">
+            <label class="cursor-pointer">
+              <input type="radio" name="formAdType" value="banner" class="peer sr-only" checked />
+              <div class="p-3 rounded-xl border border-slate-700 bg-slate-800/50 peer-checked:border-sky-500 peer-checked:bg-sky-500/10 peer-checked:text-sky-400 transition text-center">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 mx-auto mb-1 text-sky-400"></i>
+                <div class="text-xs font-bold text-slate-200 peer-checked:text-sky-400">Banner</div>
+                <div class="text-[10px] text-slate-400">Standard Card</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="formAdType" value="photo" class="peer sr-only" />
+              <div class="p-3 rounded-xl border border-slate-700 bg-slate-800/50 peer-checked:border-emerald-500 peer-checked:bg-emerald-500/10 peer-checked:text-emerald-400 transition text-center">
+                <i data-lucide="image" class="w-5 h-5 mx-auto mb-1 text-emerald-400"></i>
+                <div class="text-xs font-bold text-slate-200 peer-checked:text-emerald-400">Photo</div>
+                <div class="text-[10px] text-slate-400">Visual Showcase</div>
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="formAdType" value="video" class="peer sr-only" />
+              <div class="p-3 rounded-xl border border-slate-700 bg-slate-800/50 peer-checked:border-purple-500 peer-checked:bg-purple-500/10 peer-checked:text-purple-400 transition text-center">
+                <i data-lucide="play-circle" class="w-5 h-5 mx-auto mb-1 text-purple-400"></i>
+                <div class="text-xs font-bold text-slate-200 peer-checked:text-purple-400">Video</div>
+                <div class="text-[10px] text-slate-400">MP4 Stream</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- 2. Ad ID & Badge & Rating Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Ad ID</label>
+            <input type="text" id="formId" required placeholder="e.g. nzb_banner_01" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Badge Text</label>
+            <input type="text" id="formBadgeText" placeholder="e.g. 25% OFF, PRO, NEW" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Rating (0.0 - 5.0)</label>
+            <input type="number" id="formRating" step="0.1" min="0" max="5" value="4.8" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+          </div>
+        </div>
+
+        <!-- 3. Title & Subtitle -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Title</label>
+          <input type="text" id="formTitle" required placeholder="Headline of the ad" 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-semibold focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Subtitle</label>
+          <input type="text" id="formSubtitle" placeholder="Brief supporting slogan or headline" 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <!-- 4. Description -->
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Description</label>
+          <textarea id="formDescription" rows="2" placeholder="Full descriptive text shown inside the ad view..." 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500"></textarea>
+        </div>
+
+        <!-- 5. Media URL & Quick Media Picker -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-medium text-slate-300">Media URL (Image or MP4 Video)</label>
+            <div class="flex items-center gap-1.5 text-[11px] text-sky-400">
+              <button type="button" id="btnPresetImageSample" class="hover:underline">Image Sample</button>
+              <span>•</span>
+              <button type="button" id="btnPresetVideoSample" class="hover:underline">Video Sample</button>
+            </div>
+          </div>
+          <input type="url" id="formMediaUrl" required placeholder="https://images.unsplash.com/... or https://...mp4" 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <!-- 6. Action Link & Action Label -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Action URL (Link or Deep Link)</label>
+            <input type="url" id="formActionUrl" required placeholder="https://example.com/item" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Action Button Label</label>
+            <input type="text" id="formActionLabel" required placeholder="e.g. Order Now, Upgrade, Learn More" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-semibold focus:outline-none focus:border-sky-500" />
+          </div>
+        </div>
+
+        <!-- 7. Sponsor Tag, Location & Dismissible -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Sponsor Tag</label>
+            <input type="text" id="formSponsorTag" placeholder="e.g. Sponsored · Nizamabad" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Location Info</label>
+            <input type="text" id="formLocationInfo" placeholder="e.g. Subhash Road, Nizamabad" 
+              class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+          </div>
+
+          <div class="pt-4 flex items-center gap-2">
+            <input type="checkbox" id="formIsDismissible" checked class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500" />
+            <label for="formIsDismissible" class="text-xs text-slate-300 cursor-pointer">Allow Dismiss (x)</label>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="pt-4 border-t border-slate-800 flex items-center justify-end gap-2.5">
+          <button type="button" id="btnCancelForm" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md shadow-sky-500/20 transition active:scale-95 flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span id="btnSubmitText">Save Ad</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD NEW CITY ================= -->
+  <div id="cityModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i>
+          <span>Add New City Scope</span>
+        </h3>
+        <button id="btnCloseCityModal" class="p-1 rounded-lg text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400 mb-4">
+        Create a dedicated ad payload for any city. The Android app can fetch ads by requesting <code class="text-sky-400">/ads/&lt;city&gt;.json</code>.
+      </p>
+
+      <form id="cityForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">City Name</label>
+          <input type="text" id="newCityInput" required placeholder="e.g. Hyderabad, Karimnagar, Warangal, Dallas" 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-sky-500" />
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="btnCancelCity" class="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-800">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-500 hover:bg-emerald-400 shadow-md shadow-emerald-500/20">
+            Create City
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: RAW JSON & VALIDATOR ================= -->
+  <div id="rawJsonModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl p-6 flex flex-col max-h-[85vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="code-2" class="w-4 h-4 text-indigo-400"></i>
+            <span>Raw JSON Document Editor</span>
+          </h3>
+          <p class="text-xs text-slate-400">Directly inspect, edit, or copy the exact JSON payload</p>
+        </div>
+        <button id="btnCloseRawJson" class="p-1 rounded-lg text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="py-3 flex-1 overflow-hidden flex flex-col">
+        <textarea id="rawJsonTextarea" spellcheck="false" 
+          class="w-full flex-1 p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-emerald-400 focus:outline-none focus:border-indigo-500 min-h-[360px]"></textarea>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
+        <div id="jsonStatusMsg" class="text-slate-400 font-mono">Ready</div>
+        <div class="flex items-center gap-2">
+          <button id="btnFormatJson" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
+            Format
+          </button>
+          <button id="btnCopyRawJson" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition">
+            Copy JSON
+          </button>
+          <button id="btnSaveRawJson" class="px-4 py-1.5 rounded-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition">
+            Apply Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ANDROID DEVELOPER INTEGRATION HUB ================= -->
+  <div id="apiHubModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl p-6 flex flex-col max-h-[88vh]">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="smartphone" class="w-5 h-5 text-sky-400"></i>
+            <span>Android App Integration Hub</span>
+          </h3>
+          <p class="text-xs text-slate-400">Everything needed to consume this JSON inside your Android application</p>
+        </div>
+        <button id="btnCloseApiHub" class="p-1 rounded-lg text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="py-4 space-y-4 overflow-y-auto flex-1 text-xs">
+        
+        <!-- Live Endpoint Card -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Android Fetch Endpoint</div>
+          <div class="flex items-center justify-between gap-2 bg-slate-900 p-2 rounded-lg border border-slate-800 font-mono text-sky-400 break-all">
+            <span id="hubEndpointUrl">https://.../ads/global.json</span>
+            <button id="btnCopyHubEndpoint" class="px-2 py-1 rounded bg-slate-800 text-slate-200 hover:text-white shrink-0">
+              Copy
+            </button>
+          </div>
+          <div class="mt-2 text-slate-500 text-[11px]">
+            ⚡ Tip: Cache-Control, ETag, and CORS (<code class="text-slate-400">Access-Control-Allow-Origin: *</code>) are pre-configured automatically.
+          </div>
+        </div>
+
+        <!-- Kotlin Data Models Snippet -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Kotlin Data Classes (Retrofit / Moshi / Gson)</span>
+            <button id="btnCopyKotlinSnippet" class="text-[11px] text-slate-400 hover:text-white">Copy Code</button>
+          </div>
+          <pre class="bg-slate-900 p-3 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed">
+data class AdsResponse(
+    val scope: String? = null,
+    val city: String? = null,
+    val enabled: Boolean = true,
+    val ads: List&lt;AdItem&gt; = emptyList()
+)
+
+data class AdItem(
+    val id: String,
+    val type: String, // "banner", "photo", "video"
+    val title: String,
+    val subtitle: String? = null,
+    val description: String? = null,
+    val mediaUrl: String,
+    val actionUrl: String,
+    val actionLabel: String,
+    val sponsorTag: String? = null,
+    val badgeText: String? = null,
+    val isDismissible: Boolean = true,
+    val locationInfo: String? = null,
+    val rating: Double? = null
+)</pre>
+        </div>
+
+        <!-- Retrofit Interface Snippet -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Retrofit API Interface</span>
+          </div>
+          <pre class="bg-slate-900 p-3 rounded-lg border border-slate-800 text-[11px] font-mono text-slate-300 overflow-x-auto leading-relaxed">
+interface AdsApiService {
+    @GET("ads/global.json")
+    suspend fun getGlobalAds(): AdsResponse
+
+    @GET("ads/{city}.json")
+    suspend fun getCityAds(@Path("city") city: String): AdsResponse
+}</pre>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button id="btnDismissApiHub" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: SETTINGS & SECRETS ================= -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-6">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i data-lucide="settings" class="w-4 h-4 text-sky-400"></i>
+          <span>Cloudflare Pages & Auth</span>
+        </h3>
+        <button id="btnCloseSettings" class="p-1 rounded-lg text-slate-400 hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Admin Secret Token (<code class="text-sky-400">ADMIN_TOKEN</code>)</label>
+          <input type="password" id="adminTokenInput" placeholder="Enter ADMIN_TOKEN if set in Pages env" 
+            class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500" />
+          <p class="text-[11px] text-slate-500 mt-1">If not configured in your Cloudflare Pages dashboard, leave empty to allow unrestricted access.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
+          <div class="font-semibold text-slate-300">Cloudflare Pages Setup:</div>
+          <div>1. Bind KV namespace as <code class="text-sky-400">ADS_KV</code> in <strong class="text-slate-300">Settings &gt; Functions</strong>.</div>
+          <div>2. (Optional) Set secret <code class="text-sky-400">ADMIN_TOKEN</code> in <strong class="text-slate-300">Settings &gt; Environment variables</strong>.</div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-4 mt-3 border-t border-slate-800">
+        <button id="btnSaveSettings" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md">
+          Save Settings
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ================= APPLICATION JAVASCRIPT ================= -->
+  <script>
+    // Initial Seed Data matching user's exact specification
+    const DEFAULT_GLOBAL = {
+      "scope": "global",
+      "enabled": true,
+      "ads": [
+        {
+          "id": "global_banner_01",
+          "type": "banner",
+          "title": "Global Secure Cloud Backup Pro",
+          "subtitle": "Zero-knowledge encrypted cloud vault synchronization across Android & Web.",
+          "description": "Protect all your passwords, documents, and family records with military-grade AES-256 encryption.",
+          "mediaUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80",
+          "actionUrl": "https://example.com/cloud-backup-pro",
+          "actionLabel": "Upgrade",
+          "sponsorTag": "Global Sponsor · Featured",
+          "badgeText": "PRO",
+          "isDismissible": true,
+          "locationInfo": "Worldwide Service",
+          "rating": 4.9
+        },
+        {
+          "id": "global_video_02",
+          "type": "video",
+          "title": "Smart Home AI Security Hub",
+          "subtitle": "Seamless Integration with Vault Alarms & Sensors",
+          "description": "Get instant intrusion alerts and automated emergency calling right on your phone.",
+          "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          "actionUrl": "https://example.com/smart-home-hub",
+          "actionLabel": "Learn More",
+          "sponsorTag": "Global Sponsor · Tech",
+          "badgeText": "NEW",
+          "isDismissible": true,
+          "locationInfo": "Global Availability",
+          "rating": 4.7
+        }
+      ]
+    };
+
+    const DEFAULT_NIZAMABAD = {
+      "city": "Nizamabad",
+      "enabled": true,
+      "ads": [
+        {
+          "id": "nzb_banner_01",
+          "type": "banner",
+          "title": "Nizamabad Fresh Organic Farm Mart",
+          "subtitle": "Farm fresh spices, cold-pressed oils & grains directly from Armoor & Bodhan farms.",
+          "description": "Get same-day door delivery across Nizamabad town. Special 25% launch discount on your first grocery basket.",
+          "mediaUrl": "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80",
+          "actionUrl": "https://example.com/nizamabad-mart",
+          "actionLabel": "Order Now",
+          "sponsorTag": "Sponsored · Nizamabad",
+          "badgeText": "25% OFF",
+          "isDismissible": true,
+          "locationInfo": "Khaleelwadi, Nizamabad",
+          "rating": 4.8
+        },
+        {
+          "id": "nzb_photo_02",
+          "type": "photo",
+          "title": "Sri Mahalaxmi Jewellers — Nizamabad",
+          "subtitle": "Festive Gold & Silver Collection",
+          "description": "Exquisite 916 BIS Hallmarked wedding jewellery, lightweight daily wear gold, and pure silver artifacts. Visit our main showroom on Subhash Road.",
+          "mediaUrl": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=800&q=80",
+          "actionUrl": "https://example.com/mahalaxmi-jewellers",
+          "actionLabel": "View Catalogue",
+          "sponsorTag": "Local Partner · Subhash Road",
+          "badgeText": "FESTIVE SALE",
+          "isDismissible": true,
+          "locationInfo": "Subhash Road, Nizamabad",
+          "rating": 4.9
+        },
+        {
+          "id": "nzb_video_03",
+          "type": "video",
+          "title": "Nizamabad Smart E-Bikes & Scooters",
+          "subtitle": "Zero Emission, 120km Range per Charge",
+          "description": "Experience silent high-torque electric mobility designed for Telangana roads. Book a free test ride at our Khaleelwadi dealership.",
+          "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+          "actionUrl": "https://example.com/ev-testride",
+          "actionLabel": "Book Test Ride",
+          "sponsorTag": "Sponsored · Nizamabad EV",
+          "badgeText": "SUBSIDY AVAILABLE",
+          "isDismissible": true,
+          "locationInfo": "Near RTC Complex, Nizamabad",
+          "rating": 4.7
+        }
+      ]
+    };
+
+    // State
+    const AppState = {
+      currentScope: 'global', // 'global' or city name e.g. 'Nizamabad'
+      cities: ['global', 'Nizamabad'],
+      doc: null,
+      selectedAdIdForSimulator: null,
+      selectedIds: new Set(),
+      token: localStorage.getItem('swot_admin_token') || '',
+      isCloudConnected: false,
+    };
+
+    // DOM Elements
+    const cityTabsContainer = document.getElementById('cityTabsContainer');
+    const cityEnabledToggle = document.getElementById('cityEnabledToggle');
+    const cityEnabledLabel = document.getElementById('cityEnabledLabel');
+    const endpointDisplay = document.getElementById('endpointDisplay');
+    const btnCopyEndpoint = document.getElementById('btnCopyEndpoint');
+    const btnTestEndpoint = document.getElementById('btnTestEndpoint');
+    const searchInput = document.getElementById('searchInput');
+    const typeFilter = document.getElementById('typeFilter');
+    const adsContainer = document.getElementById('adsContainer');
+    const adCountDisplay = document.getElementById('adCountDisplay');
+    const cityScopeBadge = document.getElementById('cityScopeBadge');
+    const simulatedAdMount = document.getElementById('simulatedAdMount');
+    const previewModeTitle = document.getElementById('previewModeTitle');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const btnBulkDelete = document.getElementById('btnBulkDelete');
+
+    // Modals
+    const adModal = document.getElementById('adModal');
+    const cityModal = document.getElementById('cityModal');
+    const rawJsonModal = document.getElementById('rawJsonModal');
+    const apiHubModal = document.getElementById('apiHubModal');
+    const settingsModal = document.getElementById('settingsModal');
+
+    // Form
+    const adForm = document.getElementById('adForm');
+    const formMode = document.getElementById('formMode');
+    const formOriginalId = document.getElementById('formOriginalId');
+    const formId = document.getElementById('formId');
+    const formTitle = document.getElementById('formTitle');
+    const formSubtitle = document.getElementById('formSubtitle');
+    const formDescription = document.getElementById('formDescription');
+    const formMediaUrl = document.getElementById('formMediaUrl');
+    const formActionUrl = document.getElementById('formActionUrl');
+    const formActionLabel = document.getElementById('formActionLabel');
+    const formSponsorTag = document.getElementById('formSponsorTag');
+    const formBadgeText = document.getElementById('formBadgeText');
+    const formLocationInfo = document.getElementById('formLocationInfo');
+    const formRating = document.getElementById('formRating');
+    const formIsDismissible = document.getElementById('formIsDismissible');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSubtitle = document.getElementById('modalSubtitle');
+    const btnSubmitText = document.getElementById('btnSubmitText');
+
+    // Toast helper
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-slate-100 border border-slate-700'
+      };
+      toast.className = `${colors[type] || colors.info} px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+      toast.innerHTML = `<span>${message}</span>`;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Helper: Auth headers
+    function getAuthHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      if (AppState.token) {
+        headers['x-admin-token'] = AppState.token;
+      }
+      return headers;
+    }
+
+    // Update Clock in Simulator
+    function updateClock() {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      const clockEl = document.getElementById('androidClock');
+      if (clockEl) clockEl.textContent = `${hrs}:${mins}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ================= INITIALIZATION & STORAGE =================
+    async function initApp() {
+      // 1. Fetch Cities
+      await loadCities();
+
+      // 2. Fetch Active Scope
+      await loadScope(AppState.currentScope);
+
+      // Re-initialize Lucide Icons
+      lucide.createIcons();
+    }
+
+    async function loadCities() {
+      try {
+        const res = await fetch('/admin/cities', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.cities) && data.cities.length > 0) {
+            AppState.cities = data.cities;
+            AppState.isCloudConnected = true;
+          }
+        }
+      } catch (e) {
+        console.warn('Backend not responding to /admin/cities, using local cache', e);
+      }
+
+      // Check localStorage for offline cities
+      const cachedCities = localStorage.getItem('swot_cities_list');
+      if (cachedCities) {
+        try {
+          const parsed = JSON.parse(cachedCities);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(c => {
+              if (!AppState.cities.map(x=>x.toLowerCase()).includes(c.toLowerCase())) {
+                AppState.cities.push(c);
+              }
+            });
+          }
+        } catch(e) {}
+      }
+
+      renderCityTabs();
+    }
+
+    function renderCityTabs() {
+      cityTabsContainer.innerHTML = '';
+
+      AppState.cities.forEach(city => {
+        const isGlobal = city.toLowerCase() === 'global';
+        const isActive = AppState.currentScope.toLowerCase() === city.toLowerCase();
+
+        const btn = document.createElement('button');
+        btn.className = `flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+          isActive 
+            ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' 
+            : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-700/60'
+        }`;
+
+        const iconHtml = isGlobal 
+          ? '<i data-lucide="globe" class="w-3.5 h-3.5"></i>' 
+          : '<i data-lucide="map-pin" class="w-3.5 h-3.5"></i>';
+
+        btn.innerHTML = `
+          ${iconHtml}
+          <span>${isGlobal ? 'Global Ads' : city}</span>
+        `;
+
+        btn.addEventListener('click', () => {
+          loadScope(city);
+        });
+
+        cityTabsContainer.appendChild(btn);
+      });
+
+      // "+ Add City" button
+      const addCityBtn = document.createElement('button');
+      addCityBtn.id = 'btnOpenAddCity';
+      addCityBtn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-sky-400 bg-slate-800/40 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-sky-500/50 shrink-0 transition';
+      addCityBtn.innerHTML = `
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span>Add City</span>
+      `;
+      addCityBtn.addEventListener('click', () => {
+        cityModal.classList.remove('hidden');
+        document.getElementById('newCityInput').focus();
+      });
+      cityTabsContainer.appendChild(addCityBtn);
+
+      lucide.createIcons();
+    }
+
+    async function loadScope(scopeName) {
+      AppState.currentScope = scopeName;
+      AppState.selectedIds.clear();
+      updateBulkState();
+      renderCityTabs();
+
+      const isGlobal = scopeName.toLowerCase() === 'global';
+      const cleanKey = isGlobal ? 'global' : scopeName.toLowerCase();
+
+      // Update Endpoint displays
+      const endpoint = `/ads/${cleanKey}.json`;
+      endpointDisplay.textContent = endpoint;
+      btnTestEndpoint.href = endpoint;
+      document.getElementById('hubEndpointUrl').textContent = `${window.location.origin}${endpoint}`;
+
+      // Update Scope Label
+      cityScopeBadge.textContent = isGlobal ? 'scope: global' : `city: ${scopeName}`;
+
+      // Try fetching from Server
+      let doc = null;
+      try {
+        const res = await fetch(`/admin/ads/${cleanKey}`, { headers: getAuthHeaders() });
+        if (res.ok) {
+          doc = await res.json();
+          AppState.isCloudConnected = true;
+        }
+      } catch (e) {
+        console.warn(`Could not reach backend /admin/ads/${cleanKey}, falling back to local storage`, e);
+      }
+
+      // If server didn't provide doc, check localStorage
+      if (!doc) {
+        const localKey = `swot_ads_doc_${cleanKey}`;
+        const localDoc = localStorage.getItem(localKey);
+        if (localDoc) {
+          try { doc = JSON.parse(localDoc); } catch(e){}
+        }
+      }
+
+      // If still no doc, use default seeds!
+      if (!doc) {
+        if (isGlobal) {
+          doc = JSON.parse(JSON.stringify(DEFAULT_GLOBAL));
+        } else if (scopeName.toLowerCase() === 'nizamabad') {
+          doc = JSON.parse(JSON.stringify(DEFAULT_NIZAMABAD));
+        } else {
+          doc = {
+            city: scopeName,
+            enabled: true,
+            ads: []
+          };
+        }
+      }
+
+      AppState.doc = doc;
+
+      // Update Switch
+      cityEnabledToggle.checked = doc.enabled !== false;
+      updateCityToggleLabel();
+
+      // Render Ads List & Simulator
+      renderAdsList();
+      selectAdForSimulator(doc.ads && doc.ads.length > 0 ? doc.ads[0].id : null);
+    }
+
+    function updateCityToggleLabel() {
+      const active = cityEnabledToggle.checked;
+      cityEnabledLabel.textContent = active ? 'ACTIVE' : 'PAUSED';
+      cityEnabledLabel.className = `text-xs font-semibold ${active ? 'text-emerald-400' : 'text-amber-400'}`;
+    }
+
+    cityEnabledToggle.addEventListener('change', () => {
+      if (AppState.doc) {
+        AppState.doc.enabled = cityEnabledToggle.checked;
+        updateCityToggleLabel();
+        persistCurrentDocLocally();
+        showToast(`Ads serving for ${AppState.currentScope} is now ${cityEnabledToggle.checked ? 'Active' : 'Paused'}.`, 'info');
+      }
+    });
+
+    // ================= PERSISTENCE (LOCAL & CLOUD) =================
+    function persistCurrentDocLocally() {
+      if (!AppState.doc) return;
+      const cleanKey = AppState.currentScope.toLowerCase() === 'global' ? 'global' : AppState.currentScope.toLowerCase();
+      localStorage.setItem(`swot_ads_doc_${cleanKey}`, JSON.stringify(AppState.doc));
+      localStorage.setItem('swot_cities_list', JSON.stringify(AppState.cities));
+    }
+
+    async function syncToCloud(silent = false) {
+      if (!AppState.doc) return;
+      persistCurrentDocLocally();
+      const cleanKey = AppState.currentScope.toLowerCase() === 'global' ? 'global' : AppState.currentScope.toLowerCase();
+
+      try {
+        const res = await fetch(`/admin/ads/${cleanKey}`, {
+          method: 'PUT',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ doc: AppState.doc })
+        });
+
+        if (res.ok) {
+          AppState.isCloudConnected = true;
+          document.getElementById('connectionPill').className = 'hidden md:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+          document.getElementById('connectionText').textContent = 'Edge Synced';
+          if (!silent) {
+            confetti({ particleCount: 40, spread: 60, origin: { y: 0.2 } });
+            showToast(`✅ Successfully saved and primed edge cache for ${AppState.currentScope}!`, 'success');
+          }
+          return true;
+        } else {
+          const err = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            showToast('⚠️ Unauthorized: Please check your ADMIN_TOKEN in Settings.', 'error');
+          } else {
+            showToast(`Cloud save returned ${res.status}: ${err.error || 'Check KV binding'}`, 'error');
+          }
+          return false;
+        }
+      } catch (e) {
+        console.error('Cloud save failed', e);
+        if (!silent) {
+          showToast('⚠️ Saved to local storage. Bind ADS_KV in Cloudflare Pages to persist in Cloud.', 'info');
+        }
+        return false;
+      }
+    }
+
+    document.getElementById('btnSaveToCloud').addEventListener('click', () => syncToCloud(false));
+
+    // ================= RENDER ADS LIST =================
+    function renderAdsList() {
+      adsContainer.innerHTML = '';
+      if (!AppState.doc || !Array.isArray(AppState.doc.ads) || AppState.doc.ads.length === 0) {
+        adsContainer.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="inbox" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white mb-1">No ads in this scope yet</h3>
+            <p class="text-xs text-slate-400 mb-4 max-w-sm mx-auto">
+              Create your first ad for ${AppState.currentScope} or load the pre-configured sample set.
+            </p>
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="document.getElementById('btnOpenNewAdModal').click()" class="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md transition">
+                + Create Ad
+              </button>
+              <button onclick="loadDefaultSampleForCurrentScope()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition">
+                Load Sample Ads
+              </button>
+            </div>
+          </div>
+        `;
+        adCountDisplay.textContent = '0 Ads';
+        lucide.createIcons();
+        renderSimulatorAd(null);
+        return;
+      }
+
+      const q = (searchInput.value || '').toLowerCase().trim();
+      const filterType = typeFilter.value;
+
+      const filtered = AppState.doc.ads.filter(ad => {
+        if (filterType && ad.type !== filterType) return false;
+        if (!q) return true;
+        return (
+          (ad.title || '').toLowerCase().includes(q) ||
+          (ad.subtitle || '').toLowerCase().includes(q) ||
+          (ad.description || '').toLowerCase().includes(q) ||
+          (ad.id || '').toLowerCase().includes(q) ||
+          (ad.badgeText || '').toLowerCase().includes(q) ||
+          (ad.sponsorTag || '').toLowerCase().includes(q) ||
+          (ad.locationInfo || '').toLowerCase().includes(q)
+        );
+      });
+
+      adCountDisplay.textContent = `${AppState.doc.ads.length} Ad${AppState.doc.ads.length === 1 ? '' : 's'}${filtered.length !== AppState.doc.ads.length ? ` (${filtered.length} matched)` : ''}`;
+
+      if (filtered.length === 0) {
+        adsContainer.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-center text-slate-400 text-xs">
+            No ads matching query "${escapeHtml(q)}"
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach((ad, index) => {
+        const isSelectedInSim = AppState.selectedAdIdForSimulator === ad.id;
+        const isChecked = AppState.selectedIds.has(ad.id);
+
+        const card = document.createElement('div');
+        card.className = `ad-card-hover bg-slate-900 border rounded-2xl p-4 transition-all relative ${
+          isSelectedInSim ? 'border-sky-500/80 ring-1 ring-sky-500/40 bg-slate-900/90' : 'border-slate-800 hover:border-slate-700'
+        }`;
+
+        // Type color badge config
+        const typeConfig = {
+          banner: { color: 'text-sky-400 bg-sky-500/10 border-sky-500/30', icon: 'layout-dashboard', label: 'Banner' },
+          photo: { color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30', icon: 'image', label: 'Photo' },
+          video: { color: 'text-purple-400 bg-purple-500/10 border-purple-500/30', icon: 'play-circle', label: 'Video' }
+        }[ad.type || 'banner'] || { color: 'text-slate-400 bg-slate-800 border-slate-700', icon: 'tag', label: ad.type };
+
+        // Media thumbnail
+        const isVideo = ad.type === 'video' || (ad.mediaUrl && ad.mediaUrl.endsWith('.mp4'));
+        const mediaThumb = ad.mediaUrl 
+          ? (isVideo 
+              ? `<div class="w-20 h-16 rounded-xl bg-slate-950 overflow-hidden relative shrink-0 border border-slate-800">
+                  <video src="${escapeHtml(ad.mediaUrl)}" class="w-full h-full object-cover" muted preload="metadata"></video>
+                  <div class="absolute inset-0 flex items-center justify-center bg-black/40">
+                    <i data-lucide="play" class="w-4 h-4 text-white fill-white"></i>
+                  </div>
+                 </div>`
+              : `<div class="w-20 h-16 rounded-xl bg-slate-950 overflow-hidden shrink-0 border border-slate-800">
+                  <img src="${escapeHtml(ad.mediaUrl)}" alt="" class="w-full h-full object-cover loading="lazy" />
+                 </div>`
+            )
+          : `<div class="w-20 h-16 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 text-[10px]">
+              No Media
+             </div>`;
+
+        card.innerHTML = `
+          <div class="flex items-start gap-3.5">
+            
+            <!-- Checkbox -->
+            <div class="pt-1">
+              <input type="checkbox" data-id="${escapeHtml(ad.id)}" class="ad-checkbox w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500 cursor-pointer" ${isChecked ? 'checked' : ''} />
+            </div>
+
+            <!-- Media Preview Thumbnail -->
+            ${mediaThumb}
+
+            <!-- Ad Content Details -->
+            <div class="flex-1 min-w-0">
+              
+              <!-- Top Row Badges -->
+              <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
+                <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${typeConfig.color}">
+                  <i data-lucide="${typeConfig.icon}" class="w-3 h-3"></i>
+                  ${typeConfig.label}
+                </span>
+
+                ${ad.badgeText ? `
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                    ${escapeHtml(ad.badgeText)}
+                  </span>
+                ` : ''}
+
+                ${ad.rating ? `
+                  <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-slate-800 text-amber-400">
+                    ⭐ ${Number(ad.rating).toFixed(1)}
+                  </span>
+                ` : ''}
+
+                <span class="text-[11px] font-mono text-slate-500 ml-auto">
+                  #${escapeHtml(ad.id)}
+                </span>
+              </div>
+
+              <!-- Title & Subtitle -->
+              <h4 class="text-xs sm:text-sm font-bold text-white tracking-tight truncate">${escapeHtml(ad.title || 'Untitled Ad')}</h4>
+              ${ad.subtitle ? `<p class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(ad.subtitle)}</p>` : ''}
+              
+              <!-- Location & Sponsor Pills -->
+              <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-400">
+                ${ad.sponsorTag ? `
+                  <span class="inline-flex items-center gap-1 text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-md">
+                    🏷️ ${escapeHtml(ad.sponsorTag)}
+                  </span>
+                ` : ''}
+
+                ${ad.locationInfo ? `
+                  <span class="inline-flex items-center gap-1 text-slate-400 bg-slate-800/50 px-2 py-0.5 rounded-md">
+                    📍 ${escapeHtml(ad.locationInfo)}
+                  </span>
+                ` : ''}
+
+                <a href="${escapeHtml(ad.actionUrl || '#')}" target="_blank" class="inline-flex items-center gap-1 text-sky-400 hover:underline">
+                  ${escapeHtml(ad.actionLabel || 'Action')} ↗
+                </a>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Bottom Actions Bar -->
+          <div class="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
+            <!-- Left: Simulator Preview button -->
+            <button class="btn-preview-sim inline-flex items-center gap-1 text-xs font-medium ${isSelectedInSim ? 'text-sky-400 font-bold' : 'text-slate-400 hover:text-sky-400'} transition" data-id="${escapeHtml(ad.id)}">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              <span>${isSelectedInSim ? 'Viewing in Phone' : 'Preview in Phone'}</span>
+            </button>
+
+            <!-- Right: Reorder / Duplicate / Edit / Delete -->
+            <div class="flex items-center gap-1">
+              <!-- Move Up -->
+              <button class="btn-move-up p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Up" data-id="${escapeHtml(ad.id)}" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}>
+                <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <!-- Move Down -->
+              <button class="btn-move-down p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Down" data-id="${escapeHtml(ad.id)}" ${index === AppState.doc.ads.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
+                <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <!-- Duplicate -->
+              <button class="btn-duplicate p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition" title="Duplicate Ad" data-id="${escapeHtml(ad.id)}">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <!-- Edit -->
+              <button class="btn-edit p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition" title="Edit Ad" data-id="${escapeHtml(ad.id)}">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+
+              <!-- Delete -->
+              <button class="btn-delete p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition" title="Delete Ad" data-id="${escapeHtml(ad.id)}">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        adsContainer.appendChild(card);
+      });
+
+      // Attach event listeners to card elements
+      document.querySelectorAll('.ad-checkbox').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.dataset.id;
+          if (e.target.checked) AppState.selectedIds.add(id);
+          else AppState.selectedIds.delete(id);
+          updateBulkState();
+        });
+      });
+
+      document.querySelectorAll('.btn-preview-sim').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          selectAdForSimulator(id);
+          renderAdsList();
+        });
+      });
+
+      document.querySelectorAll('.btn-move-up').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          moveAd(id, -1);
+        });
+      });
+
+      document.querySelectorAll('.btn-move-down').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          moveAd(id, 1);
+        });
+      });
+
+      document.querySelectorAll('.btn-duplicate').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          duplicateAd(id);
+        });
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          openEditAdModal(id);
+        });
+      });
+
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          deleteAd(id);
+        });
+      });
+
+      lucide.createIcons();
+    }
+
+    function updateBulkState() {
+      const count = AppState.selectedIds.size;
+      if (count > 0) {
+        bulkActions.classList.remove('hidden');
+        bulkActions.classList.add('flex');
+        selectedCount.textContent = `${count} selected`;
+      } else {
+        bulkActions.classList.add('hidden');
+        bulkActions.classList.remove('flex');
+      }
+    }
+
+    btnBulkDelete.addEventListener('click', () => {
+      if (AppState.selectedIds.size === 0) return;
+      if (!confirm(`Delete ${AppState.selectedIds.size} selected ad(s)?`)) return;
+
+      AppState.doc.ads = AppState.doc.ads.filter(a => !AppState.selectedIds.has(a.id));
+      AppState.selectedIds.clear();
+      updateBulkState();
+      persistCurrentDocLocally();
+      renderAdsList();
+      selectAdForSimulator(AppState.doc.ads[0] ? AppState.doc.ads[0].id : null);
+      showToast('Selected ads deleted.', 'info');
+      syncToCloud(true);
+    });
+
+    searchInput.addEventListener('input', renderAdsList);
+    typeFilter.addEventListener('change', renderAdsList);
+
+    // ================= AD REORDER & DUPLICATE & DELETE =================
+    function moveAd(id, direction) {
+      if (!AppState.doc || !Array.isArray(AppState.doc.ads)) return;
+      const idx = AppState.doc.ads.findIndex(a => a.id === id);
+      if (idx === -1) return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= AppState.doc.ads.length) return;
+
+      const temp = AppState.doc.ads[idx];
+      AppState.doc.ads[idx] = AppState.doc.ads[targetIdx];
+      AppState.doc.ads[targetIdx] = temp;
+
+      persistCurrentDocLocally();
+      renderAdsList();
+      syncToCloud(true);
+    }
+
+    function duplicateAd(id) {
+      if (!AppState.doc || !Array.isArray(AppState.doc.ads)) return;
+      const original = AppState.doc.ads.find(a => a.id === id);
+      if (!original) return;
+
+      const cloned = JSON.parse(JSON.stringify(original));
+      cloned.id = `${original.id}_copy_${Math.random().toString(36).slice(2, 6)}`;
+      cloned.title = `${original.title} (Copy)`;
+
+      AppState.doc.ads.push(cloned);
+      persistCurrentDocLocally();
+      renderAdsList();
+      selectAdForSimulator(cloned.id);
+      showToast(`Duplicated ad as ${cloned.id}`, 'success');
+      syncToCloud(true);
+    }
+
+    function deleteAd(id) {
+      if (!AppState.doc || !Array.isArray(AppState.doc.ads)) return;
+      if (!confirm(`Are you sure you want to delete ad #${id}?`)) return;
+
+      AppState.doc.ads = AppState.doc.ads.filter(a => a.id !== id);
+      if (AppState.selectedAdIdForSimulator === id) {
+        AppState.selectedAdIdForSimulator = AppState.doc.ads[0] ? AppState.doc.ads[0].id : null;
+      }
+
+      persistCurrentDocLocally();
+      renderAdsList();
+      renderSimulatorAd(AppState.doc.ads.find(a => a.id === AppState.selectedAdIdForSimulator));
+      showToast(`Ad #${id} deleted`, 'info');
+      syncToCloud(true);
+    }
+
+    // ================= ANDROID SIMULATOR RENDERING =================
+    function selectAdForSimulator(id) {
+      AppState.selectedAdIdForSimulator = id;
+      const ad = AppState.doc && Array.isArray(AppState.doc.ads) 
+        ? AppState.doc.ads.find(a => a.id === id) 
+        : null;
+      renderSimulatorAd(ad);
+    }
+
+    function renderSimulatorAd(ad) {
+      if (!ad) {
+        simulatedAdMount.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-center text-slate-500 text-xs">
+            No active ad to preview
+          </div>
+        `;
+        previewModeTitle.textContent = 'No Ad Selected';
+        return;
+      }
+
+      previewModeTitle.textContent = `${ad.type ? ad.type.toUpperCase() : 'BANNER'} PREVIEW`;
+      const isVideo = ad.type === 'video' || (ad.mediaUrl && ad.mediaUrl.endsWith('.mp4'));
+
+      // 1. BANNER AD VIEW
+      if (ad.type === 'banner') {
+        simulatedAdMount.innerHTML = `
+          <div class="bg-gradient-to-b from-slate-900 to-slate-900/90 border border-sky-500/40 rounded-2xl p-3.5 shadow-xl relative overflow-hidden ring-1 ring-sky-500/20">
+            
+            ${ad.isDismissible ? `
+              <button onclick="this.closest('#simulatedAdMount').innerHTML='<div class=\\'p-3 text-center text-slate-500 text-[11px]\\'>Ad dismissed (Android dismissible callback fired)</div>'" 
+                class="absolute top-2 right-2 p-1 text-slate-400 hover:text-white rounded-full bg-slate-800/80 text-[10px]">
+                ✕
+              </button>
+            ` : ''}
+
+            <!-- Top Tag -->
+            <div class="flex items-center gap-1.5 mb-2 pr-6">
+              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 uppercase tracking-wider">
+                ${escapeHtml(ad.badgeText || 'PRO')}
+              </span>
+              <span class="text-[10px] text-slate-400 font-medium truncate">
+                ${escapeHtml(ad.sponsorTag || 'Sponsored')}
+              </span>
+              ${ad.rating ? `<span class="text-[10px] text-amber-400 ml-auto font-bold">⭐ ${Number(ad.rating).toFixed(1)}</span>` : ''}
+            </div>
+
+            <!-- Main Banner Visual & Title -->
+            <div class="flex items-center gap-3">
+              ${ad.mediaUrl ? `
+                <div class="w-16 h-16 rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-slate-800">
+                  <img src="${escapeHtml(ad.mediaUrl)}" class="w-full h-full object-cover" />
+                </div>
+              ` : ''}
+              <div class="min-w-0 flex-1">
+                <h5 class="text-xs font-bold text-white tracking-tight leading-snug line-clamp-2">${escapeHtml(ad.title || '')}</h5>
+                <p class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${escapeHtml(ad.subtitle || '')}</p>
+              </div>
+            </div>
+
+            ${ad.description ? `
+              <p class="text-[10px] text-slate-300 line-clamp-2 mt-2 leading-relaxed">
+                ${escapeHtml(ad.description)}
+              </p>
+            ` : ''}
+
+            <!-- Action Footer -->
+            <div class="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+              <span class="text-[9px] text-slate-400 truncate">
+                📍 ${escapeHtml(ad.locationInfo || 'Global')}
+              </span>
+              <a href="${escapeHtml(ad.actionUrl || '#')}" target="_blank" class="px-3 py-1 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-bold text-[11px] shadow-sm transition shrink-0">
+                ${escapeHtml(ad.actionLabel || 'Open')}
+              </a>
+            </div>
+
+          </div>
+        `;
+        return;
+      }
+
+      // 2. PHOTO AD VIEW
+      if (ad.type === 'photo') {
+        simulatedAdMount.innerHTML = `
+          <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl overflow-hidden shadow-xl ring-1 ring-emerald-500/20 relative">
+            
+            ${ad.isDismissible ? `
+              <button onclick="this.closest('#simulatedAdMount').innerHTML='<div class=\\'p-3 text-center text-slate-500 text-[11px]\\'>Ad dismissed</div>'" 
+                class="absolute top-2 right-2 p-1 text-slate-200 hover:text-white rounded-full bg-black/60 text-[10px] z-10 backdrop-blur-sm">
+                ✕
+              </button>
+            ` : ''}
+
+            <!-- High Res Photo Container -->
+            <div class="w-full h-36 bg-slate-950 relative overflow-hidden">
+              ${ad.mediaUrl ? `
+                <img src="${escapeHtml(ad.mediaUrl)}" class="w-full h-full object-cover" />
+              ` : '<div class="w-full h-full flex items-center justify-center text-slate-600 text-xs">No Photo</div>'}
+              <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+              
+              <div class="absolute top-2 left-2 flex items-center gap-1.5">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white uppercase tracking-wider shadow">
+                  ${escapeHtml(ad.badgeText || 'FEATURED')}
+                </span>
+              </div>
+            </div>
+
+            <!-- Details -->
+            <div class="p-3">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                <span>🏷️ ${escapeHtml(ad.sponsorTag || 'Sponsored')}</span>
+                ${ad.rating ? `<span class="text-amber-400 font-bold">⭐ ${Number(ad.rating).toFixed(1)}</span>` : ''}
+              </div>
+
+              <h5 class="text-xs font-bold text-white tracking-tight">${escapeHtml(ad.title || '')}</h5>
+              <p class="text-[10px] text-emerald-400 font-medium mt-0.5">${escapeHtml(ad.subtitle || '')}</p>
+              
+              <p class="text-[10px] text-slate-300 mt-1.5 leading-relaxed line-clamp-2">
+                ${escapeHtml(ad.description || '')}
+              </p>
+
+              <div class="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                <span class="text-[9px] text-slate-400 truncate">
+                  📍 ${escapeHtml(ad.locationInfo || 'Local Partner')}
+                </span>
+                <a href="${escapeHtml(ad.actionUrl || '#')}" target="_blank" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-[11px] shadow-sm transition">
+                  ${escapeHtml(ad.actionLabel || 'View')}
+                </a>
+              </div>
+            </div>
+
+          </div>
+        `;
+        return;
+      }
+
+      // 3. VIDEO AD VIEW
+      if (ad.type === 'video') {
+        simulatedAdMount.innerHTML = `
+          <div class="bg-slate-900 border border-purple-500/40 rounded-2xl overflow-hidden shadow-xl ring-1 ring-purple-500/20 relative">
+            
+            ${ad.isDismissible ? `
+              <button onclick="this.closest('#simulatedAdMount').innerHTML='<div class=\\'p-3 text-center text-slate-500 text-[11px]\\'>Ad dismissed</div>'" 
+                class="absolute top-2 right-2 p-1 text-slate-200 hover:text-white rounded-full bg-black/60 text-[10px] z-10 backdrop-blur-sm">
+                ✕
+              </button>
+            ` : ''}
+
+            <!-- Real Video Stream Player -->
+            <div class="w-full h-36 bg-black relative flex items-center justify-center">
+              ${ad.mediaUrl ? `
+                <video src="${escapeHtml(ad.mediaUrl)}" class="w-full h-full object-cover" controls playsinline muted></video>
+              ` : '<div class="text-slate-600 text-xs">No Video URL</div>'}
+
+              <div class="absolute top-2 left-2 pointer-events-none">
+                <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-600 text-white uppercase tracking-wider shadow">
+                  ${escapeHtml(ad.badgeText || 'VIDEO')}
+                </span>
+              </div>
+            </div>
+
+            <div class="p-3">
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                <span>🎬 ${escapeHtml(ad.sponsorTag || 'Sponsored Video')}</span>
+                ${ad.rating ? `<span class="text-amber-400 font-bold">⭐ ${Number(ad.rating).toFixed(1)}</span>` : ''}
+              </div>
+
+              <h5 class="text-xs font-bold text-white tracking-tight">${escapeHtml(ad.title || '')}</h5>
+              <p class="text-[10px] text-purple-400 font-medium mt-0.5">${escapeHtml(ad.subtitle || '')}</p>
+
+              <div class="mt-3 flex items-center justify-between gap-2 pt-2 border-t border-slate-800">
+                <span class="text-[9px] text-slate-400 truncate">
+                  📍 ${escapeHtml(ad.locationInfo || 'Worldwide')}
+                </span>
+                <a href="${escapeHtml(ad.actionUrl || '#')}" target="_blank" class="px-3 py-1 rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-[11px] shadow-sm transition">
+                  ${escapeHtml(ad.actionLabel || 'Watch / Action')}
+                </a>
+              </div>
+            </div>
+
+          </div>
+        `;
+        return;
+      }
+    }
+
+    // ================= MODAL: ADD / EDIT AD =================
+    document.getElementById('btnOpenNewAdModal').addEventListener('click', () => {
+      openCreateAdModal();
+    });
+
+    function openCreateAdModal() {
+      formMode.value = 'create';
+      formOriginalId.value = '';
+      modalTitle.textContent = 'Create New Ad';
+      modalSubtitle.textContent = `Adding ad to ${AppState.currentScope.toUpperCase()} payload`;
+      btnSubmitText.textContent = 'Create Ad';
+
+      // Auto generate suggested ID
+      const prefix = AppState.currentScope.toLowerCase() === 'global' ? 'global' : AppState.currentScope.toLowerCase().slice(0, 3);
+      formId.value = `${prefix}_banner_${Math.random().toString(36).slice(2, 6)}`;
+      formTitle.value = '';
+      formSubtitle.value = '';
+      formDescription.value = '';
+      formMediaUrl.value = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
+      formActionUrl.value = 'https://example.com';
+      formActionLabel.value = 'Order Now';
+      formSponsorTag.value = `Sponsored · ${AppState.currentScope}`;
+      formBadgeText.value = 'SPECIAL';
+      formLocationInfo.value = AppState.currentScope === 'global' ? 'Worldwide Service' : `${AppState.currentScope} Central`;
+      formRating.value = 4.8;
+      formIsDismissible.checked = true;
+
+      // Select banner type by default
+      const bannerRadio = document.querySelector('input[name="formAdType"][value="banner"]');
+      if (bannerRadio) bannerRadio.checked = true;
+
+      adModal.classList.remove('hidden');
+      formTitle.focus();
+    }
+
+    function openEditAdModal(id) {
+      if (!AppState.doc || !Array.isArray(AppState.doc.ads)) return;
+      const ad = AppState.doc.ads.find(a => a.id === id);
+      if (!ad) return;
+
+      formMode.value = 'edit';
+      formOriginalId.value = ad.id;
+      modalTitle.textContent = `Edit Ad #${ad.id}`;
+      modalSubtitle.textContent = `Modifying ad in ${AppState.currentScope.toUpperCase()}`;
+      btnSubmitText.textContent = 'Save Changes';
+
+      formId.value = ad.id || '';
+      formTitle.value = ad.title || '';
+      formSubtitle.value = ad.subtitle || '';
+      formDescription.value = ad.description || '';
+      formMediaUrl.value = ad.mediaUrl || '';
+      formActionUrl.value = ad.actionUrl || '';
+      formActionLabel.value = ad.actionLabel || '';
+      formSponsorTag.value = ad.sponsorTag || '';
+      formBadgeText.value = ad.badgeText || '';
+      formLocationInfo.value = ad.locationInfo || '';
+      formRating.value = ad.rating != null ? ad.rating : 4.8;
+      formIsDismissible.checked = ad.isDismissible !== false;
+
+      const typeRadio = document.querySelector(`input[name="formAdType"][value="${ad.type || 'banner'}"]`);
+      if (typeRadio) typeRadio.checked = true;
+
+      adModal.classList.remove('hidden');
+      formTitle.focus();
+    }
+
+    document.getElementById('btnCloseModal').addEventListener('click', () => adModal.classList.add('hidden'));
+    document.getElementById('btnCancelForm').addEventListener('click', () => adModal.classList.add('hidden'));
+
+    // Preset Sample Pickers inside Modal
+    document.getElementById('btnPresetImageSample').addEventListener('click', () => {
+      formMediaUrl.value = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
+    });
+    document.getElementById('btnPresetVideoSample').addEventListener('click', () => {
+      formMediaUrl.value = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+      const videoRadio = document.querySelector('input[name="formAdType"][value="video"]');
+      if (videoRadio) videoRadio.checked = true;
+    });
+
+    adForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const selectedType = document.querySelector('input[name="formAdType"]:checked')?.value || 'banner';
+      const adData = {
+        id: formId.value.trim(),
+        type: selectedType,
+        title: formTitle.value.trim(),
+        subtitle: formSubtitle.value.trim() || undefined,
+        description: formDescription.value.trim() || undefined,
+        mediaUrl: formMediaUrl.value.trim(),
+        actionUrl: formActionUrl.value.trim(),
+        actionLabel: formActionLabel.value.trim(),
+        sponsorTag: formSponsorTag.value.trim() || undefined,
+        badgeText: formBadgeText.value.trim() || undefined,
+        isDismissible: formIsDismissible.checked,
+        locationInfo: formLocationInfo.value.trim() || undefined,
+        rating: formRating.value ? parseFloat(formRating.value) : undefined
+      };
+
+      if (!AppState.doc) AppState.doc = { enabled: true, ads: [] };
+      if (!Array.isArray(AppState.doc.ads)) AppState.doc.ads = [];
+
+      if (formMode.value === 'create') {
+        // Check duplicate ID
+        if (AppState.doc.ads.some(a => a.id === adData.id)) {
+          showToast(`Ad ID "${adData.id}" already exists. Please choose a unique ID.`, 'error');
+          return;
+        }
+        AppState.doc.ads.push(adData);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        showToast(`Ad "${adData.title}" created successfully!`, 'success');
+      } else {
+        const origId = formOriginalId.value;
+        const idx = AppState.doc.ads.findIndex(a => a.id === origId);
+        if (idx !== -1) {
+          AppState.doc.ads[idx] = adData;
+          showToast(`Ad "${adData.title}" updated successfully!`, 'success');
+        }
+      }
+
+      adModal.classList.add('hidden');
+      persistCurrentDocLocally();
+      renderAdsList();
+      selectAdForSimulator(adData.id);
+      syncToCloud(true);
+    });
+
+    // ================= MODAL: ADD CITY =================
+    document.getElementById('btnCloseCityModal').addEventListener('click', () => cityModal.classList.add('hidden'));
+    document.getElementById('btnCancelCity').addEventListener('click', () => cityModal.classList.add('hidden'));
+
+    document.getElementById('cityForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const raw = document.getElementById('newCityInput').value.trim();
+      if (!raw) return;
+
+      const cityName = raw.charAt(0).toUpperCase() + raw.slice(1);
+      if (!AppState.cities.map(c => c.toLowerCase()).includes(cityName.toLowerCase())) {
+        AppState.cities.push(cityName);
+      }
+
+      // Try registering on server
+      try {
+        await fetch('/admin/cities', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ city: cityName })
+        });
+      } catch (err) {}
+
+      localStorage.setItem('swot_cities_list', JSON.stringify(AppState.cities));
+      cityModal.classList.add('hidden');
+      document.getElementById('newCityInput').value = '';
+      showToast(`City "${cityName}" created!`, 'success');
+      loadScope(cityName);
+    });
+
+    // ================= PRESETS & DEMO DATA =================
+    const btnQuickPresets = document.getElementById('btnQuickPresets');
+    const presetsMenu = document.getElementById('presetsMenu');
+    btnQuickPresets.addEventListener('click', (e) => {
+      e.stopPropagation();
+      presetsMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', () => presetsMenu.classList.add('hidden'));
+
+    document.getElementById('btnLoadGlobalSample').addEventListener('click', () => {
+      if (!AppState.cities.includes('global')) AppState.cities.unshift('global');
+      loadScope('global');
+      AppState.doc = JSON.parse(JSON.stringify(DEFAULT_GLOBAL));
+      persistCurrentDocLocally();
+      renderAdsList();
+      selectAdForSimulator(AppState.doc.ads[0].id);
+      showToast('Loaded Global Demo Ads dataset.', 'success');
+      syncToCloud(true);
+    });
+
+    document.getElementById('btnLoadNzbSample').addEventListener('click', () => {
+      if (!AppState.cities.some(c => c.toLowerCase() === 'nizamabad')) {
+        AppState.cities.push('Nizamabad');
+      }
+      loadScope('Nizamabad');
+      AppState.doc = JSON.parse(JSON.stringify(DEFAULT_NIZAMABAD));
+      persistCurrentDocLocally();
+      renderAdsList();
+      selectAdForSimulator(AppState.doc.ads[0].id);
+      showToast('Loaded Nizamabad 3-Ad sample set.', 'success');
+      syncToCloud(true);
+    });
+
+    function loadDefaultSampleForCurrentScope() {
+      if (AppState.currentScope.toLowerCase() === 'global') {
+        document.getElementById('btnLoadGlobalSample').click();
+      } else {
+        document.getElementById('btnLoadNzbSample').click();
+      }
+    }
+
+    // Export JSON
+    document.getElementById('btnExportJson').addEventListener('click', () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(AppState.doc, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `${AppState.currentScope.toLowerCase()}_ads.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Downloaded JSON file.', 'info');
+    });
+
+    // Import JSON
+    document.getElementById('btnImportJson').addEventListener('click', () => {
+      const paste = prompt('Paste full ads JSON document to replace current city ads:');
+      if (!paste) return;
+      try {
+        const parsed = JSON.parse(paste);
+        if (!parsed.ads || !Array.isArray(parsed.ads)) {
+          alert('JSON must include an "ads" array.');
+          return;
+        }
+        AppState.doc = parsed;
+        persistCurrentDocLocally();
+        renderAdsList();
+        selectAdForSimulator(parsed.ads[0] ? parsed.ads[0].id : null);
+        showToast('JSON imported successfully.', 'success');
+        syncToCloud(true);
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+      }
+    });
+
+    // ================= MODAL: RAW JSON =================
+    const rawJsonTextarea = document.getElementById('rawJsonTextarea');
+    const jsonStatusMsg = document.getElementById('jsonStatusMsg');
+
+    document.getElementById('btnOpenRawJson').addEventListener('click', () => {
+      rawJsonTextarea.value = JSON.stringify(AppState.doc, null, 2);
+      jsonStatusMsg.textContent = `Document has ${AppState.doc?.ads?.length || 0} ads`;
+      rawJsonModal.classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseRawJson').addEventListener('click', () => rawJsonModal.classList.add('hidden'));
+
+    document.getElementById('btnFormatJson').addEventListener('click', () => {
+      try {
+        const p = JSON.parse(rawJsonTextarea.value);
+        rawJsonTextarea.value = JSON.stringify(p, null, 2);
+        jsonStatusMsg.textContent = 'Formatted correctly';
+      } catch (e) {
+        jsonStatusMsg.textContent = `Error: ${e.message}`;
+      }
+    });
+
+    document.getElementById('btnCopyRawJson').addEventListener('click', () => {
+      navigator.clipboard.writeText(rawJsonTextarea.value);
+      showToast('JSON copied to clipboard!', 'info');
+    });
+
+    document.getElementById('btnSaveRawJson').addEventListener('click', () => {
+      try {
+        const parsed = JSON.parse(rawJsonTextarea.value);
+        AppState.doc = parsed;
+        persistCurrentDocLocally();
+        renderAdsList();
+        selectAdForSimulator(parsed.ads?.[0]?.id || null);
+        rawJsonModal.classList.add('hidden');
+        showToast('Raw JSON applied successfully!', 'success');
+        syncToCloud(true);
+      } catch (e) {
+        alert('Invalid JSON: ' + e.message);
+      }
+    });
+
+    // ================= MODAL: ANDROID API HUB =================
+    document.getElementById('btnOpenApiHub').addEventListener('click', () => {
+      apiHubModal.classList.remove('hidden');
+    });
+    document.getElementById('btnCloseApiHub').addEventListener('click', () => apiHubModal.classList.add('hidden'));
+    document.getElementById('btnDismissApiHub').addEventListener('click', () => apiHubModal.classList.add('hidden'));
+
+    document.getElementById('btnCopyHubEndpoint').addEventListener('click', () => {
+      const url = document.getElementById('hubEndpointUrl').textContent;
+      navigator.clipboard.writeText(url);
+      showToast('Endpoint URL copied!', 'success');
+    });
+
+    document.getElementById('btnCopyEndpoint').addEventListener('click', () => {
+      const url = `${window.location.origin}/ads/${AppState.currentScope.toLowerCase()}.json`;
+      navigator.clipboard.writeText(url);
+      showToast('Endpoint URL copied!', 'success');
+    });
+
+    document.getElementById('btnCopyKotlinSnippet').addEventListener('click', () => {
+      const code = `data class AdsResponse(
+    val scope: String? = null,
+    val city: String? = null,
+    val enabled: Boolean = true,
+    val ads: List<AdItem> = emptyList()
+)
+
+data class AdItem(
+    val id: String,
+    val type: String,
+    val title: String,
+    val subtitle: String? = null,
+    val description: String? = null,
+    val mediaUrl: String,
+    val actionUrl: String,
+    val actionLabel: String,
+    val sponsorTag: String? = null,
+    val badgeText: String? = null,
+    val isDismissible: Boolean = true,
+    val locationInfo: String? = null,
+    val rating: Double? = null
+)`;
+      navigator.clipboard.writeText(code);
+      showToast('Kotlin data models copied!', 'success');
+    });
+
+    // ================= MODAL: SETTINGS =================
+    const adminTokenInput = document.getElementById('adminTokenInput');
+    document.getElementById('btnOpenSettings').addEventListener('click', () => {
+      adminTokenInput.value = AppState.token || '';
+      settingsModal.classList.remove('hidden');
+    });
+    document.getElementById('btnCloseSettings').addEventListener('click', () => settingsModal.classList.add('hidden'));
+
+    document.getElementById('btnSaveSettings').addEventListener('click', () => {
+      AppState.token = adminTokenInput.value.trim();
+      localStorage.setItem('swot_admin_token', AppState.token);
+      settingsModal.classList.add('hidden');
+      showToast('Settings saved.', 'info');
+      syncToCloud(true);
+    });
+
+    // Helper: Escape HTML
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Launch application on page load
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

@@ -61,6 +61,6 @@
       }
     }
   },
-  "required": ["scope","enabled","ads"],
+  "required": ["enabled","ads"],
   "additionalProperties": true
 }

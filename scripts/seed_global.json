@@ -1,0 +1,36 @@
+{
+  "scope": "global",
+  "enabled": true,
+  "ads": [
+    {
+      "id": "global_banner_01",
+      "type": "banner",
+      "title": "Global Secure Cloud Backup Pro",
+      "subtitle": "Zero-knowledge encrypted cloud vault synchronization across Android & Web.",
+      "description": "Protect all your passwords, documents, and family records with military-grade AES-256 encryption.",
+      "mediaUrl": "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80",
+      "actionUrl": "https://example.com/cloud-backup-pro",
+      "actionLabel": "Upgrade",
+      "sponsorTag": "Global Sponsor · Featured",
+      "badgeText": "PRO",
+      "isDismissible": true,
+      "locationInfo": "Worldwide Service",
+      "rating": 4.9
+    },
+    {
+      "id": "global_video_02",
+      "type": "video",
+      "title": "Smart Home AI Security Hub",
+      "subtitle": "Seamless Integration with Vault Alarms & Sensors",
+      "description": "Get instant intrusion alerts and automated emergency calling right on your phone.",
+      "mediaUrl": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "actionUrl": "https://example.com/smart-home-hub",
+      "actionLabel": "Learn More",
+      "sponsorTag": "Global Sponsor · Tech",
+      "badgeText": "NEW",
+      "isDismissible": true,
+      "locationInfo": "Global Availability",
+      "rating": 4.7
+    }
+  ]
+}
