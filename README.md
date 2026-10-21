@@ -130,6 +130,54 @@ A modern, dynamic ad-management dashboard and serverless edge API built for **Cl
 
 ---
 
+## 📊 Scalability & Cost Analysis (1 Lakh / 100,000 Daily Mobile Phones)
+
+If **1 lakh (100,000) mobile phones** read this JSON daily, here is the traffic breakdown, services used, and cost analysis:
+
+### 1. Traffic Calculations
+
+| Metric | 1 Fetch / Phone / Day | 2 Fetches / Phone / Day *(Global + City)* |
+|---|---|---|
+| **Daily Requests** | 100,000 requests / day | 200,000 requests / day |
+| **Monthly Requests** (30 days) | **3,000,000 (3 Million)** | **6,000,000 (6 Million)** |
+| **JSON Payload Size** | ~1.2 KB (gzipped: ~500 B) | ~1.2 KB (gzipped: ~500 B) |
+| **Monthly Bandwidth** | ~3.6 GB to 4.5 GB | ~7.2 GB to 9 GB |
+
+### 2. Services Used in this Architecture
+
+1. **Cloudflare Pages**:
+   - Hosts the admin dashboard web application (`/` and `/admin/`).
+   - **Cost**: **$0.00 / month** (Unlimited static requests & bandwidth included free).
+
+2. **Cloudflare Pages Functions (Workers Runtime)**:
+   - Executes `/ads/[city].json.js` to serve the API to Android clients and handles admin changes.
+   - Computes ETags and handles cache routing.
+
+3. **Cloudflare Workers KV (`ADS_KV`)**:
+   - High-performance, globally replicated Key-Value database that stores your ads JSON documents.
+
+4. **Cloudflare Global Edge Cache & CDN**:
+   - Automatically caches `/ads/global.json` and `/ads/nizamabad.json` across Cloudflare's 330+ global edge locations using the configured `Cache-Control: public, max-age=60, s-maxage=300` headers.
+   - **Over 90% - 95% of requests are served directly from Cloudflare's edge RAM**, meaning the KV database is only queried occasionally on cache misses.
+
+5. **External Media Storage**:
+   - Images and videos are referenced via URLs (`mediaUrl`) pointing to external CDNs (Unsplash, Google Storage, AWS S3, or Cloudflare R2).
+
+### 3. Monthly Cost Breakdown
+
+| Service | Cloudflare Free Tier | Cloudflare Workers Paid ($5/mo) | Your Estimated Monthly Bill |
+|---|---|---|---|
+| **Cloudflare Pages** | Free (Unlimited) | Free (Unlimited) | **$0.00** |
+| **Functions (3M – 6M reqs)** | 100k/day free | 10M included | **$0.00** or **$5.00** |
+| **Workers KV Reads** | 100k/day free | 10M included | **$0.00** |
+| **Egress Bandwidth** | Free ($0) | Free ($0) | **$0.00** |
+| **Total Estimated Cost** | **$0 / month** | **$5 / month (~₹420 INR)** | **Max $5 / month** |
+
+- **Free Tier ($0 / month)**: Covers up to 100,000 requests/day (~3M requests/month) for free.
+- **Workers Paid Plan ($5 / month, ~₹420 INR)**: Highly recommended for production. Includes **10 Million requests/month** and **10 Million KV reads/month**, easily supporting 100,000 to 300,000 daily active users with zero overages and zero throttling.
+
+---
+
 ## 🤖 Android Implementation (Kotlin)
 
 ### Data Models
@@ -158,7 +206,7 @@ data class AdItem(
 )
 ```
 
-### Retrofit Service
+### Retrofit Service with OkHttp Cache
 ```kotlin
 interface AdsApiService {
     @GET("ads/global.json")
@@ -167,7 +215,20 @@ interface AdsApiService {
     @GET("ads/{city}.json")
     suspend fun getCityAds(@Path("city") city: String): AdsResponse
 }
+
+// Recommended OkHttpClient setup with cache (supports 304 Not Modified)
+fun createOkHttpClient(context: Context): OkHttpClient {
+    val cacheSize = 10L * 1024 * 1024 // 10 MB
+    val cache = Cache(context.cacheDir, cacheSize)
+    return OkHttpClient.Builder()
+        .cache(cache)
+        .build()
+}
 ```
+
+### Android Best Practices
+1. **Enable HTTP Caching / ETag**: Because the backend provides `ETag` and `Cache-Control`, OkHttp automatically caches the JSON. When the ads haven't changed, Cloudflare returns a `304 Not Modified` status, consuming **0 body bytes**.
+2. **Fetch Frequency**: Trigger ad requests on app launch or at reasonable intervals (e.g. once every 2–4 hours or during a pull-to-refresh) rather than on every screen navigation.
 
 ---
 
@@ -184,7 +245,10 @@ interface AdsApiService {
      - Variable name: `ADS_KV`
      - KV namespace: select `SWOT_ADS_KV`.
 
-3. **(Optional) Configure Admin Secret Token**:
-   - Go to **Settings > Environment variables** and add `ADMIN_TOKEN`.
-   - In the web UI, click **Settings (⚙️)** and paste your token.
-   - If `ADMIN_TOKEN` is not set, access remains unlocked for immediate ease of use.
+3. **Admin Token Authentication & Sign Out**:
+   - In Cloudflare Pages, go to **Settings > Environment variables** and add `ADMIN_TOKEN` with your secret passkey.
+   - When visiting the website, users are greeted with an **Admin Sign-In Gate** requesting the access token.
+   - The token is verified against `/admin/verify` and securely saved in `localStorage` or `sessionStorage` (with a "Remember on this browser" option).
+   - Once authenticated, the header displays a live status indicator: `🛡️ Authenticated: ••••<last4>`.
+   - Click the **Sign Out** button in the top navigation bar (or inside Settings ⚙️) to immediately revoke the local session, clear tokens, and lock the console.
+   - If `ADMIN_TOKEN` is not yet set in Cloudflare, access remains open with an option to continue in Local / Preview Mode.

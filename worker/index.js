@@ -42,6 +42,21 @@ async function handleRequest(req, env) {
     return handleCities(req, env);
   }
 
+  // 2b. Admin endpoint: /admin/verify
+  if (parts[0] === 'admin' && parts[1] === 'verify') {
+    if (!isAuthorized(req, env)) {
+      return new Response(JSON.stringify({ valid: false, error: 'Invalid or missing admin access token' }), {
+        status: 401,
+        headers: CORS_HEADERS
+      });
+    }
+    const requiredToken = env && env.ADMIN_TOKEN ? env.ADMIN_TOKEN.trim() : null;
+    return new Response(JSON.stringify({ valid: true, configured: Boolean(requiredToken && requiredToken !== '') }), {
+      status: 200,
+      headers: CORS_HEADERS
+    });
+  }
+
   // 3. Admin endpoint: /admin/ads/{city}
   if (parts[0] === 'admin' && parts[1] === 'ads' && parts.length >= 3) {
     const city = decodeURIComponent(parts[2]).trim();

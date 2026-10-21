@@ -44,17 +44,10 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
     
-    /* Custom Scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
     ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(100, 116, 139, 1); }
-
-    .phone-glass {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
 
     .ad-card-hover {
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -62,11 +55,6 @@
     .ad-card-hover:hover {
       transform: translateY(-2px);
       box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(14, 165, 233, 0.15);
-    }
-
-    .video-thumbnail-badge {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
     }
   </style>
 </head>
@@ -94,285 +82,368 @@
         </div>
       </div>
 
-      <!-- Quick Actions & Status -->
+      <!-- Quick Actions & Auth Status (Active when logged in) -->
       <div class="flex items-center gap-2.5">
-        <!-- Live Connection Pill -->
-        <div id="connectionPill" class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+        
+        <!-- Auth Token Active Pill -->
+        <div id="authStatusPill" class="hidden items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Connected with Admin Access Token">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="connectionText">Edge Connected</span>
+          <span class="font-medium text-emerald-300">Authenticated:</span>
+          <span id="authTokenPreview" class="font-mono text-[11px] text-emerald-400">••••</span>
         </div>
 
         <!-- Android API Hub Button -->
-        <button id="btnOpenApiHub" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
+        <button id="btnOpenApiHub" class="hidden authenticated-element items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
           <i data-lucide="smartphone" class="w-3.5 h-3.5 text-sky-400"></i>
           <span>Android API</span>
         </button>
 
         <!-- Raw JSON Modal Button -->
-        <button id="btnOpenRawJson" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
+        <button id="btnOpenRawJson" class="hidden authenticated-element items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 hover:border-slate-600 transition shadow-sm">
           <i data-lucide="code-2" class="w-3.5 h-3.5 text-indigo-400"></i>
           <span>Raw JSON</span>
         </button>
 
         <!-- Save to Cloudflare KV Button -->
-        <button id="btnSaveToCloud" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 transition shadow-md shadow-sky-500/20 active:scale-95">
+        <button id="btnSaveToCloud" class="hidden authenticated-element items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 transition shadow-md shadow-sky-500/20 active:scale-95">
           <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
           <span>Sync to Cloud</span>
         </button>
 
         <!-- Settings Button -->
-        <button id="btnOpenSettings" title="Configure Cloudflare Token" class="p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition">
+        <button id="btnOpenSettings" title="Cloudflare & Token Settings" class="hidden authenticated-element p-2 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition">
           <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Sign Out Button -->
+        <button id="btnSignOut" title="Sign Out of Admin Console" class="hidden authenticated-element items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 hover:border-rose-600 transition shadow-sm active:scale-95">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">Sign Out</span>
         </button>
       </div>
 
     </div>
   </header>
 
-  <!-- ================= DYNAMIC CITY / SCOPE SWITCHER BAR ================= -->
-  <div class="border-b border-slate-800 bg-slate-900/50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        
-        <!-- City Tabs Scrollable Container -->
-        <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none" id="cityTabsContainer">
-          <!-- Rendered dynamically in JS -->
+  <!-- ================= 1. AUTHENTICATION GATE (SHOWN WHEN LOGGED OUT) ================= -->
+  <div id="authGate" class="flex-1 flex items-center justify-center p-4 min-h-[80vh]">
+    <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      
+      <!-- Top Decorative Accent -->
+      <div class="absolute -top-24 -left-24 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+      <!-- Brand Icon & Header -->
+      <div class="text-center mb-6 relative">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-sky-500/25 text-white font-black text-2xl mx-auto mb-3">
+          ⚡
         </div>
-
-        <!-- Master Switch & Quick URL Copy -->
-        <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t border-slate-800/80 lg:border-t-0">
-          
-          <!-- Master Scope Toggle -->
-          <div class="flex items-center gap-2.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70">
-            <span class="text-xs text-slate-300 font-medium">Serving Ads:</span>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="cityEnabledToggle" class="sr-only peer" checked>
-              <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-            <span id="cityEnabledLabel" class="text-xs font-semibold text-emerald-400">ACTIVE</span>
-          </div>
-
-          <!-- Direct Endpoint Pill -->
-          <div class="flex items-center gap-1.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70 text-xs">
-            <span class="text-slate-400 font-mono text-[11px] truncate max-w-[170px] sm:max-w-[240px]" id="endpointDisplay">
-              /ads/global.json
-            </span>
-            <button id="btnCopyEndpoint" title="Copy Android JSON Endpoint" class="p-1 text-slate-400 hover:text-sky-400 transition">
-              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-            </button>
-            <a id="btnTestEndpoint" href="/ads/global.json" target="_blank" title="Open JSON in New Tab" class="p-1 text-slate-400 hover:text-indigo-400 transition">
-              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-            </a>
-          </div>
-
+        <h2 class="text-lg font-bold text-white tracking-tight">SWOT ADS ENGINE</h2>
+        <div class="flex items-center justify-center gap-1.5 mt-1">
+          <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+            <i data-lucide="shield" class="w-3 h-3"></i>
+            Admin Access Protected
+          </span>
         </div>
-
+        <p class="text-xs text-slate-400 mt-2">
+          Enter your admin access token to unlock the ad dashboard and publish changes to Cloudflare KV.
+        </p>
       </div>
+
+      <!-- Error Alert Banner -->
+      <div id="authErrorAlert" class="hidden mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+        <span id="authErrorMsg">Invalid admin token</span>
+      </div>
+
+      <!-- Auth Form -->
+      <form id="authForm" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+            Admin Access Token
+          </label>
+          <div class="relative">
+            <i data-lucide="key-round" class="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="password" id="authGateTokenInput" required placeholder="Enter ADMIN_TOKEN secret"
+              class="w-full pl-9 pr-10 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition" />
+            <button type="button" id="btnToggleTokenVisibility" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+              <i data-lucide="eye" id="tokenEyeIcon" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1.5">
+            Configured as <code class="text-sky-400 font-mono">ADMIN_TOKEN</code> in your Cloudflare Pages environment variables.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="authRememberMe" checked class="w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500 cursor-pointer" />
+            <span>Remember on this browser</span>
+          </label>
+        </div>
+
+        <button type="submit" id="btnSubmitAuth" class="w-full py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 hover:from-sky-400 hover:to-indigo-500 transition shadow-lg shadow-sky-500/25 active:scale-[0.98] flex items-center justify-center gap-2">
+          <i data-lucide="unlock" class="w-4 h-4"></i>
+          <span id="btnSubmitAuthText">Sign In with Token</span>
+        </button>
+
+        <div class="text-center pt-2">
+          <button type="button" id="btnLocalMode" class="text-[11px] text-slate-400 hover:text-sky-400 transition underline underline-offset-4">
+            Or continue in Local / Preview Mode
+          </button>
+        </div>
+      </form>
+
     </div>
   </div>
 
-  <!-- ================= MAIN DASHBOARD BODY ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- ================= 2. AUTHENTICATED DASHBOARD ROOT ================= -->
+  <div id="dashboardRoot" class="hidden flex-1 flex-col">
 
-      <!-- ================= LEFT: ADS MANAGER (8 COLS) ================= -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
-        
-        <!-- Controls & Filter Toolbar -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            
-            <!-- Search & Filters -->
-            <div class="flex flex-1 items-center gap-2">
-              <div class="relative flex-1">
-                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
-                <input id="searchInput" type="text" placeholder="Search ads by title, ID, tag, location..." 
-                  class="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition" />
-              </div>
-
-              <!-- Type Filter -->
-              <select id="typeFilter" class="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
-                <option value="">All Types</option>
-                <option value="banner">📌 Banner</option>
-                <option value="photo">🖼️ Photo</option>
-                <option value="video">🎬 Video</option>
-              </select>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex items-center gap-2">
-              <!-- New Ad Button -->
-              <button id="btnOpenNewAdModal" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md shadow-sky-500/20 transition active:scale-95">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span>New Ad</span>
-              </button>
-
-              <!-- Quick Presets Dropdown -->
-              <div class="relative inline-block text-left">
-                <button id="btnQuickPresets" class="p-2 rounded-xl text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 transition" title="Preset & Seed Actions">
-                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
-                </button>
-                <div id="presetsMenu" class="hidden absolute right-0 mt-2 w-56 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-1.5 z-30 text-xs">
-                  <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Demo Datasets</div>
-                  <button id="btnLoadGlobalSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
-                    <i data-lucide="globe" class="w-3.5 h-3.5 text-sky-400"></i>
-                    <span>Load Global Cloud Ads</span>
-                  </button>
-                  <button id="btnLoadNzbSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
-                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
-                    <span>Load Nizamabad 3-Ad Set</span>
-                  </button>
-                  <div class="my-1 border-t border-slate-800"></div>
-                  <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Document Actions</div>
-                  <button id="btnExportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
-                    <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-400"></i>
-                    <span>Export City JSON</span>
-                  </button>
-                  <button id="btnImportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
-                    <i data-lucide="upload" class="w-3.5 h-3.5 text-purple-400"></i>
-                    <span>Import / Paste JSON</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Ads List Header & Bulk Operations -->
-        <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-          <div class="flex items-center gap-2 font-medium">
-            <span id="adCountDisplay">0 Ads</span>
-            <span class="text-slate-600">•</span>
-            <span id="cityScopeBadge" class="text-slate-300 font-mono">scope: global</span>
-          </div>
-
-          <div id="bulkActions" class="hidden items-center gap-2">
-            <span id="selectedCount" class="text-slate-400">0 selected</span>
-            <button id="btnBulkDelete" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition">
-              Delete Selected
-            </button>
-          </div>
-        </div>
-
-        <!-- Ads Cards List -->
-        <div id="adsContainer" class="flex flex-col gap-3">
-          <!-- Rendered dynamically -->
-        </div>
-
-      </div>
-
-      <!-- ================= RIGHT: LIVE ANDROID SIMULATOR (5 COLS) ================= -->
-      <div class="lg:col-span-5 xl:col-span-4">
-        <div class="sticky top-24 flex flex-col items-center">
+    <!-- DYNAMIC CITY / SCOPE SWITCHER BAR -->
+    <div class="border-b border-slate-800 bg-slate-900/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           
-          <div class="w-full flex items-center justify-between mb-3 px-1">
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-300">
-              <i data-lucide="smartphone" class="w-4 h-4 text-sky-400"></i>
-              <span>Live Android Device Simulator</span>
-            </div>
-            <div class="text-[11px] text-slate-400 font-mono" id="previewModeTitle">
-              Interactive Feed
-            </div>
+          <!-- City Tabs Scrollable Container -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 lg:pb-0 scrollbar-none" id="cityTabsContainer">
+            <!-- Rendered dynamically in JS -->
           </div>
 
-          <!-- Realistic Android Mockup Frame -->
-          <div class="w-[340px] h-[670px] bg-slate-900 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative flex flex-col select-none ring-1 ring-slate-700/50">
+          <!-- Master Switch & Quick URL Copy -->
+          <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 lg:pt-0 border-t border-slate-800/80 lg:border-t-0">
             
-            <!-- Camera Punch-Hole Notch -->
-            <div class="absolute top-5 left-1/2 -translate-x-1/2 w-4 h-4 bg-black rounded-full z-30 border border-slate-800 flex items-center justify-center">
-              <div class="w-1.5 h-1.5 rounded-full bg-slate-900/80"></div>
+            <!-- Master Scope Toggle -->
+            <div class="flex items-center gap-2.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70">
+              <span class="text-xs text-slate-300 font-medium">Serving Ads:</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="cityEnabledToggle" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <span id="cityEnabledLabel" class="text-xs font-semibold text-emerald-400">ACTIVE</span>
             </div>
 
-            <!-- Phone Speaker Ear-piece -->
-            <div class="absolute top-3 left-1/2 -translate-x-1/2 w-14 h-1 bg-slate-800 rounded-full z-20"></div>
-
-            <!-- Phone Screen Area -->
-            <div class="w-full h-full bg-slate-950 rounded-[34px] overflow-hidden flex flex-col relative border border-slate-800/80">
-              
-              <!-- Android Status Bar -->
-              <div class="h-8 bg-slate-950/90 text-slate-300 px-6 flex items-center justify-between text-[11px] font-semibold shrink-0 z-20">
-                <span id="androidClock">20:40</span>
-                <div class="flex items-center gap-1.5 text-slate-400 text-[10px]">
-                  <span>5G</span>
-                  <i data-lucide="wifi" class="w-3 h-3"></i>
-                  <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
-                </div>
-              </div>
-
-              <!-- Android App Bar -->
-              <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between shrink-0">
-                <div class="flex items-center gap-2">
-                  <div class="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs">
-                    S
-                  </div>
-                  <span class="text-xs font-bold text-white tracking-tight">Swot App</span>
-                </div>
-                <div class="flex items-center gap-2 text-slate-400">
-                  <i data-lucide="bell" class="w-3.5 h-3.5"></i>
-                  <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
-                    U
-                  </div>
-                </div>
-              </div>
-
-              <!-- Android App Scrollable Feed -->
-              <div class="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 scrollbar-none" id="androidFeedContainer">
-                
-                <!-- Mock Top Story Card -->
-                <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
-                  <div class="flex items-center gap-2 mb-2">
-                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                      📰
-                    </div>
-                    <span class="text-[11px] font-medium text-slate-300">Daily Updates</span>
-                    <span class="text-[10px] text-slate-500 ml-auto">10m ago</span>
-                  </div>
-                  <p class="text-slate-400 text-[11px] leading-relaxed">
-                    Swipe down to test your served ads inside this simulated Android app feed.
-                  </p>
-                </div>
-
-                <!-- AD INJECTION CONTAINER -->
-                <div id="simulatedAdMount" class="transition-all duration-300">
-                  <!-- Live Ad rendered here -->
-                </div>
-
-                <!-- Mock Bottom Post Card -->
-                <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
-                  <div class="flex items-center gap-2 mb-2">
-                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                      ⚡
-                    </div>
-                    <span class="text-[11px] font-medium text-slate-300">Local Discoveries</span>
-                    <span class="text-[10px] text-slate-500 ml-auto">Just now</span>
-                  </div>
-                  <p class="text-slate-400 text-[11px] leading-relaxed">
-                    Personalized recommendations and community announcements appear here.
-                  </p>
-                </div>
-
-              </div>
-
-              <!-- Android Bottom Navigation Pill -->
-              <div class="h-6 bg-slate-950 flex items-center justify-center shrink-0">
-                <div class="w-24 h-1 bg-slate-700 rounded-full"></div>
-              </div>
-
+            <!-- Direct Endpoint Pill -->
+            <div class="flex items-center gap-1.5 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/70 text-xs">
+              <span class="text-slate-400 font-mono text-[11px] truncate max-w-[170px] sm:max-w-[240px]" id="endpointDisplay">
+                /ads/global.json
+              </span>
+              <button id="btnCopyEndpoint" title="Copy Android JSON Endpoint" class="p-1 text-slate-400 hover:text-sky-400 transition">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+              <a id="btnTestEndpoint" href="/ads/global.json" target="_blank" title="Open JSON in New Tab" class="p-1 text-slate-400 hover:text-indigo-400 transition">
+                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              </a>
             </div>
 
-          </div>
-
-          <div class="mt-3 text-center">
-            <span class="text-[11px] text-slate-500">Live preview matches your Android app's UI rendering</span>
           </div>
 
         </div>
       </div>
-
     </div>
-  </main>
+
+    <!-- MAIN DASHBOARD BODY -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT: ADS MANAGER (7/8 COLS) -->
+        <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-4">
+          
+          <!-- Controls & Filter Toolbar -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              
+              <!-- Search & Filters -->
+              <div class="flex flex-1 items-center gap-2">
+                <div class="relative flex-1">
+                  <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+                  <input id="searchInput" type="text" placeholder="Search ads by title, ID, tag, location..." 
+                    class="w-full pl-9 pr-3 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition" />
+                </div>
+
+                <!-- Type Filter -->
+                <select id="typeFilter" class="bg-slate-800/80 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-sky-500">
+                  <option value="">All Types</option>
+                  <option value="banner">📌 Banner</option>
+                  <option value="photo">🖼️ Photo</option>
+                  <option value="video">🎬 Video</option>
+                </select>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex items-center gap-2">
+                <!-- New Ad Button -->
+                <button id="btnOpenNewAdModal" class="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md shadow-sky-500/20 transition active:scale-95">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                  <span>New Ad</span>
+                </button>
+
+                <!-- Quick Presets Dropdown -->
+                <div class="relative inline-block text-left">
+                  <button id="btnQuickPresets" class="p-2 rounded-xl text-slate-300 bg-slate-800 hover:bg-slate-700 border border-slate-700/80 transition" title="Preset & Seed Actions">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+                  </button>
+                  <div id="presetsMenu" class="hidden absolute right-0 mt-2 w-56 rounded-xl bg-slate-900 border border-slate-800 shadow-2xl py-1.5 z-30 text-xs">
+                    <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Demo Datasets</div>
+                    <button id="btnLoadGlobalSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                      <i data-lucide="globe" class="w-3.5 h-3.5 text-sky-400"></i>
+                      <span>Load Global Cloud Ads</span>
+                    </button>
+                    <button id="btnLoadNzbSample" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                      <i data-lucide="map-pin" class="w-3.5 h-3.5 text-emerald-400"></i>
+                      <span>Load Nizamabad 3-Ad Set</span>
+                    </button>
+                    <div class="my-1 border-t border-slate-800"></div>
+                    <div class="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Document Actions</div>
+                    <button id="btnExportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                      <i data-lucide="download" class="w-3.5 h-3.5 text-indigo-400"></i>
+                      <span>Export City JSON</span>
+                    </button>
+                    <button id="btnImportJson" class="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-800 hover:text-white flex items-center gap-2">
+                      <i data-lucide="upload" class="w-3.5 h-3.5 text-purple-400"></i>
+                      <span>Import / Paste JSON</span>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Ads List Header & Bulk Operations -->
+          <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+            <div class="flex items-center gap-2 font-medium">
+              <span id="adCountDisplay">0 Ads</span>
+              <span class="text-slate-600">•</span>
+              <span id="cityScopeBadge" class="text-slate-300 font-mono">scope: global</span>
+            </div>
+
+            <div id="bulkActions" class="hidden items-center gap-2">
+              <span id="selectedCount" class="text-slate-400">0 selected</span>
+              <button id="btnBulkDelete" class="text-rose-400 hover:text-rose-300 font-semibold px-2 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition">
+                Delete Selected
+              </button>
+            </div>
+          </div>
+
+          <!-- Ads Cards Container -->
+          <div id="adsContainer" class="flex flex-col gap-3">
+            <!-- Rendered dynamically -->
+          </div>
+
+        </div>
+
+        <!-- RIGHT: LIVE ANDROID SIMULATOR (5/4 COLS) -->
+        <div class="lg:col-span-5 xl:col-span-4">
+          <div class="sticky top-24 flex flex-col items-center">
+            
+            <div class="w-full flex items-center justify-between mb-3 px-1">
+              <div class="flex items-center gap-2 text-xs font-semibold text-slate-300">
+                <i data-lucide="smartphone" class="w-4 h-4 text-sky-400"></i>
+                <span>Live Android Device Simulator</span>
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono" id="previewModeTitle">
+                Interactive Feed
+              </div>
+            </div>
+
+            <!-- Realistic Android Mockup Frame -->
+            <div class="w-[340px] h-[670px] bg-slate-900 rounded-[44px] p-3 shadow-2xl border-4 border-slate-800 relative flex flex-col select-none ring-1 ring-slate-700/50">
+              
+              <!-- Camera Punch-Hole Notch -->
+              <div class="absolute top-5 left-1/2 -translate-x-1/2 w-4 h-4 bg-black rounded-full z-30 border border-slate-800 flex items-center justify-center">
+                <div class="w-1.5 h-1.5 rounded-full bg-slate-900/80"></div>
+              </div>
+
+              <!-- Phone Speaker Ear-piece -->
+              <div class="absolute top-3 left-1/2 -translate-x-1/2 w-14 h-1 bg-slate-800 rounded-full z-20"></div>
+
+              <!-- Phone Screen Area -->
+              <div class="w-full h-full bg-slate-950 rounded-[34px] overflow-hidden flex flex-col relative border border-slate-800/80">
+                
+                <!-- Android Status Bar -->
+                <div class="h-8 bg-slate-950/90 text-slate-300 px-6 flex items-center justify-between text-[11px] font-semibold shrink-0 z-20">
+                  <span id="androidClock">20:40</span>
+                  <div class="flex items-center gap-1.5 text-slate-400 text-[10px]">
+                    <span>5G</span>
+                    <i data-lucide="wifi" class="w-3 h-3"></i>
+                    <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  </div>
+                </div>
+
+                <!-- Android App Bar -->
+                <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between shrink-0">
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs">
+                      S
+                    </div>
+                    <span class="text-xs font-bold text-white tracking-tight">Swot App</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-slate-400">
+                    <i data-lucide="bell" class="w-3.5 h-3.5"></i>
+                    <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 font-bold">
+                      U
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Android App Scrollable Feed -->
+                <div class="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 scrollbar-none" id="androidFeedContainer">
+                  
+                  <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
+                    <div class="flex items-center gap-2 mb-2">
+                      <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                        📰
+                      </div>
+                      <span class="text-[11px] font-medium text-slate-300">Daily Updates</span>
+                      <span class="text-[10px] text-slate-500 ml-auto">10m ago</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                      Swipe down to test your served ads inside this simulated Android app feed.
+                    </p>
+                  </div>
+
+                  <!-- AD INJECTION CONTAINER -->
+                  <div id="simulatedAdMount" class="transition-all duration-300">
+                    <!-- Live Ad rendered here -->
+                  </div>
+
+                  <div class="bg-slate-900/70 border border-slate-800/60 rounded-xl p-3 text-xs">
+                    <div class="flex items-center gap-2 mb-2">
+                      <div class="w-5 h-5 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                        ⚡
+                      </div>
+                      <span class="text-[11px] font-medium text-slate-300">Local Discoveries</span>
+                      <span class="text-[10px] text-slate-500 ml-auto">Just now</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                      Personalized recommendations and community announcements appear here.
+                    </p>
+                  </div>
+
+                </div>
+
+                <!-- Android Bottom Navigation Pill -->
+                <div class="h-6 bg-slate-950 flex items-center justify-center shrink-0">
+                  <div class="w-24 h-1 bg-slate-700 rounded-full"></div>
+                </div>
+
+              </div>
+
+            </div>
+
+            <div class="mt-3 text-center">
+              <span class="text-[11px] text-slate-500">Live preview matches your Android app's UI rendering</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
 
   <!-- ================= MODAL: ADD / EDIT AD ================= -->
   <div id="adModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -704,7 +775,7 @@ interface AdsApiService {
       <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
         <h3 class="text-base font-bold text-white flex items-center gap-2">
           <i data-lucide="settings" class="w-4 h-4 text-sky-400"></i>
-          <span>Cloudflare Pages & Auth</span>
+          <span>Admin Token & Cloudflare Settings</span>
         </h3>
         <button id="btnCloseSettings" class="p-1 rounded-lg text-slate-400 hover:text-slate-200">
           <i data-lucide="x" class="w-4 h-4"></i>
@@ -713,22 +784,28 @@ interface AdsApiService {
 
       <div class="space-y-3.5 text-xs">
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Admin Secret Token (<code class="text-sky-400">ADMIN_TOKEN</code>)</label>
-          <input type="password" id="adminTokenInput" placeholder="Enter ADMIN_TOKEN if set in Pages env" 
+          <label class="block text-xs font-medium text-slate-300 mb-1">Current Admin Token (<code class="text-sky-400">ADMIN_TOKEN</code>)</label>
+          <input type="password" id="adminTokenInput" placeholder="Enter ADMIN_TOKEN secret" 
             class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500" />
-          <p class="text-[11px] text-slate-500 mt-1">If not configured in your Cloudflare Pages dashboard, leave empty to allow unrestricted access.</p>
+          <p class="text-[11px] text-slate-500 mt-1">Token is automatically attached as <code class="text-slate-400">x-admin-token</code> header on all API calls.</p>
         </div>
 
         <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
           <div class="font-semibold text-slate-300">Cloudflare Pages Setup:</div>
           <div>1. Bind KV namespace as <code class="text-sky-400">ADS_KV</code> in <strong class="text-slate-300">Settings &gt; Functions</strong>.</div>
-          <div>2. (Optional) Set secret <code class="text-sky-400">ADMIN_TOKEN</code> in <strong class="text-slate-300">Settings &gt; Environment variables</strong>.</div>
+          <div>2. Set secret <code class="text-sky-400">ADMIN_TOKEN</code> in <strong class="text-slate-300">Settings &gt; Environment variables</strong>.</div>
         </div>
       </div>
 
-      <div class="flex items-center justify-end gap-2 pt-4 mt-3 border-t border-slate-800">
+      <div class="flex items-center justify-between gap-2 pt-4 mt-3 border-t border-slate-800">
+        <!-- Sign out from settings button -->
+        <button type="button" id="btnSettingsSignOut" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 transition flex items-center gap-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Sign Out</span>
+        </button>
+
         <button id="btnSaveSettings" class="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-sky-500 hover:bg-sky-400 shadow-md">
-          Save Settings
+          Save Token
         </button>
       </div>
     </div>
@@ -831,16 +908,33 @@ interface AdsApiService {
 
     // State
     const AppState = {
-      currentScope: 'global', // 'global' or city name e.g. 'Nizamabad'
+      currentScope: 'global',
       cities: ['global', 'Nizamabad'],
       doc: null,
       selectedAdIdForSimulator: null,
       selectedIds: new Set(),
-      token: localStorage.getItem('swot_admin_token') || '',
+      token: localStorage.getItem('swot_admin_token') || sessionStorage.getItem('swot_admin_token') || '',
       isCloudConnected: false,
     };
 
-    // DOM Elements
+    // DOM Elements - Auth & Views
+    const authGate = document.getElementById('authGate');
+    const dashboardRoot = document.getElementById('dashboardRoot');
+    const authForm = document.getElementById('authForm');
+    const authGateTokenInput = document.getElementById('authGateTokenInput');
+    const authRememberMe = document.getElementById('authRememberMe');
+    const authErrorAlert = document.getElementById('authErrorAlert');
+    const authErrorMsg = document.getElementById('authErrorMsg');
+    const btnSubmitAuth = document.getElementById('btnSubmitAuth');
+    const btnSubmitAuthText = document.getElementById('btnSubmitAuthText');
+    const btnToggleTokenVisibility = document.getElementById('btnToggleTokenVisibility');
+    const btnLocalMode = document.getElementById('btnLocalMode');
+    const authStatusPill = document.getElementById('authStatusPill');
+    const authTokenPreview = document.getElementById('authTokenPreview');
+    const btnSignOut = document.getElementById('btnSignOut');
+    const btnSettingsSignOut = document.getElementById('btnSettingsSignOut');
+
+    // DOM Elements - Dashboard
     const cityTabsContainer = document.getElementById('cityTabsContainer');
     const cityEnabledToggle = document.getElementById('cityEnabledToggle');
     const cityEnabledLabel = document.getElementById('cityEnabledLabel');
@@ -908,11 +1002,20 @@ interface AdsApiService {
       }, 3500);
     }
 
+    // Helper: Mask token preview (e.g. ••••4a9b)
+    function maskToken(token) {
+      if (!token) return 'None';
+      if (token === 'local_preview_mode') return 'Local Mode';
+      if (token.length <= 6) return '••••••';
+      return `••••${token.slice(-4)}`;
+    }
+
     // Helper: Auth headers
     function getAuthHeaders() {
       const headers = { 'Content-Type': 'application/json' };
       if (AppState.token) {
         headers['x-admin-token'] = AppState.token;
+        headers['Authorization'] = `Bearer ${AppState.token}`;
       }
       return headers;
     }
@@ -928,21 +1031,195 @@ interface AdsApiService {
     setInterval(updateClock, 1000);
     updateClock();
 
+    // ================= AUTHENTICATION LOGIC =================
+    async function verifyToken(token) {
+      if (!token) return false;
+      if (token === 'local_preview_mode') return true;
+
+      try {
+        const res = await fetch('/admin/verify', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-token': token,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.status === 401) return false;
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          return data.valid !== false;
+        }
+        // Fallback test against /admin/cities if /admin/verify is unavailable
+        const testRes = await fetch('/admin/cities', {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-admin-token': token,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (testRes.status === 401) return false;
+        return true;
+      } catch (e) {
+        // Network error / offline: allow local session with provided token
+        return true;
+      }
+    }
+
+    function showDashboard() {
+      authGate.classList.add('hidden');
+      dashboardRoot.classList.remove('hidden');
+      dashboardRoot.classList.add('flex');
+
+      // Reveal authenticated top nav buttons
+      document.querySelectorAll('.authenticated-element').forEach(el => {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      });
+
+      // Update auth pill
+      authStatusPill.classList.remove('hidden');
+      authStatusPill.classList.add('flex');
+      authTokenPreview.textContent = maskToken(AppState.token);
+
+      adminTokenInput.value = AppState.token || '';
+      lucide.createIcons();
+    }
+
+    function showAuthGate(errorMessage = null) {
+      dashboardRoot.classList.add('hidden');
+      dashboardRoot.classList.remove('flex');
+      authGate.classList.remove('hidden');
+
+      // Hide authenticated header controls
+      document.querySelectorAll('.authenticated-element').forEach(el => {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      });
+      authStatusPill.classList.add('hidden');
+      authStatusPill.classList.remove('flex');
+
+      if (errorMessage) {
+        authErrorAlert.classList.remove('hidden');
+        authErrorMsg.textContent = errorMessage;
+      } else {
+        authErrorAlert.classList.add('hidden');
+      }
+
+      authGateTokenInput.value = '';
+      setTimeout(() => authGateTokenInput.focus(), 100);
+      lucide.createIcons();
+    }
+
+    function signOut(isAutomatic = false) {
+      localStorage.removeItem('swot_admin_token');
+      sessionStorage.removeItem('swot_admin_token');
+      AppState.token = '';
+
+      if (settingsModal && !settingsModal.classList.contains('hidden')) {
+        settingsModal.classList.add('hidden');
+      }
+
+      showAuthGate(isAutomatic ? 'Session expired or rejected by server. Please sign in again.' : null);
+      showToast(isAutomatic ? 'Signed out due to invalid token' : 'Signed out of admin console.', isAutomatic ? 'error' : 'info');
+    }
+
+    // Toggle token password visibility
+    btnToggleTokenVisibility.addEventListener('click', () => {
+      const isPass = authGateTokenInput.type === 'password';
+      authGateTokenInput.type = isPass ? 'text' : 'password';
+      const eyeIcon = document.getElementById('tokenEyeIcon');
+      eyeIcon.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+
+    // Handle Login Form Submit
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const token = authGateTokenInput.value.trim();
+      if (!token) return;
+
+      btnSubmitAuth.disabled = true;
+      btnSubmitAuthText.textContent = 'Verifying Token...';
+
+      const isValid = await verifyToken(token);
+      btnSubmitAuth.disabled = false;
+      btnSubmitAuthText.textContent = 'Sign In with Token';
+
+      if (!isValid) {
+        authErrorAlert.classList.remove('hidden');
+        authErrorMsg.textContent = 'Invalid Admin Access Token. Please check the ADMIN_TOKEN secret in your Cloudflare Pages settings.';
+        return;
+      }
+
+      // Valid token!
+      AppState.token = token;
+      if (authRememberMe.checked) {
+        localStorage.setItem('swot_admin_token', token);
+        sessionStorage.removeItem('swot_admin_token');
+      } else {
+        sessionStorage.setItem('swot_admin_token', token);
+        localStorage.removeItem('swot_admin_token');
+      }
+
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.5 } });
+      showToast('Authenticated with admin token!', 'success');
+
+      showDashboard();
+      await loadCities();
+      await loadScope(AppState.currentScope);
+    });
+
+    // Local / Preview Mode
+    btnLocalMode.addEventListener('click', async () => {
+      AppState.token = 'local_preview_mode';
+      sessionStorage.setItem('swot_admin_token', 'local_preview_mode');
+      showDashboard();
+      showToast('Entered Local Preview Mode', 'info');
+      await loadCities();
+      await loadScope(AppState.currentScope);
+    });
+
+    // Sign Out Buttons
+    btnSignOut.addEventListener('click', () => {
+      if (confirm('Are you sure you want to sign out of the Admin Console?')) {
+        signOut(false);
+      }
+    });
+
+    btnSettingsSignOut.addEventListener('click', () => {
+      if (confirm('Are you sure you want to sign out of the Admin Console?')) {
+        signOut(false);
+      }
+    });
+
     // ================= INITIALIZATION & STORAGE =================
     async function initApp() {
-      // 1. Fetch Cities
-      await loadCities();
+      const savedToken = localStorage.getItem('swot_admin_token') || sessionStorage.getItem('swot_admin_token');
+      
+      if (savedToken) {
+        AppState.token = savedToken;
+        const isValid = await verifyToken(savedToken);
+        if (isValid) {
+          showDashboard();
+          await loadCities();
+          await loadScope(AppState.currentScope);
+        } else {
+          showAuthGate('Stored admin access token is invalid or was rejected by server.');
+        }
+      } else {
+        showAuthGate();
+      }
 
-      // 2. Fetch Active Scope
-      await loadScope(AppState.currentScope);
-
-      // Re-initialize Lucide Icons
       lucide.createIcons();
     }
 
     async function loadCities() {
       try {
         const res = await fetch('/admin/cities', { headers: getAuthHeaders() });
+        if (res.status === 401) {
+          signOut(true);
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.cities) && data.cities.length > 0) {
@@ -1041,6 +1318,10 @@ interface AdsApiService {
       let doc = null;
       try {
         const res = await fetch(`/admin/ads/${cleanKey}`, { headers: getAuthHeaders() });
+        if (res.status === 401) {
+          signOut(true);
+          return;
+        }
         if (res.ok) {
           doc = await res.json();
           AppState.isCloudConnected = true;
@@ -1119,28 +1400,28 @@ interface AdsApiService {
           body: JSON.stringify({ doc: AppState.doc })
         });
 
+        if (res.status === 401) {
+          showToast('⚠️ Unauthorized: Invalid admin token.', 'error');
+          signOut(true);
+          return false;
+        }
+
         if (res.ok) {
           AppState.isCloudConnected = true;
-          document.getElementById('connectionPill').className = 'hidden md:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-          document.getElementById('connectionText').textContent = 'Edge Synced';
           if (!silent) {
             confetti({ particleCount: 40, spread: 60, origin: { y: 0.2 } });
-            showToast(`✅ Successfully saved and primed edge cache for ${AppState.currentScope}!`, 'success');
+            showToast(`✅ Successfully saved & synced ${AppState.currentScope} to Edge KV!`, 'success');
           }
           return true;
         } else {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 401) {
-            showToast('⚠️ Unauthorized: Please check your ADMIN_TOKEN in Settings.', 'error');
-          } else {
-            showToast(`Cloud save returned ${res.status}: ${err.error || 'Check KV binding'}`, 'error');
-          }
+          showToast(`Cloud save returned ${res.status}: ${err.error || 'Check KV binding'}`, 'error');
           return false;
         }
       } catch (e) {
         console.error('Cloud save failed', e);
         if (!silent) {
-          showToast('⚠️ Saved to local storage. Bind ADS_KV in Cloudflare Pages to persist in Cloud.', 'info');
+          showToast('⚠️ Saved locally. Bind ADS_KV in Cloudflare Pages to persist in Cloud.', 'info');
         }
         return false;
       }
@@ -1214,14 +1495,12 @@ interface AdsApiService {
           isSelectedInSim ? 'border-sky-500/80 ring-1 ring-sky-500/40 bg-slate-900/90' : 'border-slate-800 hover:border-slate-700'
         }`;
 
-        // Type color badge config
         const typeConfig = {
           banner: { color: 'text-sky-400 bg-sky-500/10 border-sky-500/30', icon: 'layout-dashboard', label: 'Banner' },
           photo: { color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30', icon: 'image', label: 'Photo' },
           video: { color: 'text-purple-400 bg-purple-500/10 border-purple-500/30', icon: 'play-circle', label: 'Video' }
         }[ad.type || 'banner'] || { color: 'text-slate-400 bg-slate-800 border-slate-700', icon: 'tag', label: ad.type };
 
-        // Media thumbnail
         const isVideo = ad.type === 'video' || (ad.mediaUrl && ad.mediaUrl.endsWith('.mp4'));
         const mediaThumb = ad.mediaUrl 
           ? (isVideo 
@@ -1232,7 +1511,7 @@ interface AdsApiService {
                   </div>
                  </div>`
               : `<div class="w-20 h-16 rounded-xl bg-slate-950 overflow-hidden shrink-0 border border-slate-800">
-                  <img src="${escapeHtml(ad.mediaUrl)}" alt="" class="w-full h-full object-cover loading="lazy" />
+                  <img src="${escapeHtml(ad.mediaUrl)}" alt="" class="w-full h-full object-cover" loading="lazy" />
                  </div>`
             )
           : `<div class="w-20 h-16 rounded-xl bg-slate-800 flex items-center justify-center text-slate-500 shrink-0 text-[10px]">
@@ -1241,19 +1520,13 @@ interface AdsApiService {
 
         card.innerHTML = `
           <div class="flex items-start gap-3.5">
-            
-            <!-- Checkbox -->
             <div class="pt-1">
               <input type="checkbox" data-id="${escapeHtml(ad.id)}" class="ad-checkbox w-4 h-4 rounded text-sky-500 bg-slate-800 border-slate-700 focus:ring-sky-500 cursor-pointer" ${isChecked ? 'checked' : ''} />
             </div>
 
-            <!-- Media Preview Thumbnail -->
             ${mediaThumb}
 
-            <!-- Ad Content Details -->
             <div class="flex-1 min-w-0">
-              
-              <!-- Top Row Badges -->
               <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
                 <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border ${typeConfig.color}">
                   <i data-lucide="${typeConfig.icon}" class="w-3 h-3"></i>
@@ -1277,11 +1550,9 @@ interface AdsApiService {
                 </span>
               </div>
 
-              <!-- Title & Subtitle -->
               <h4 class="text-xs sm:text-sm font-bold text-white tracking-tight truncate">${escapeHtml(ad.title || 'Untitled Ad')}</h4>
               ${ad.subtitle ? `<p class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(ad.subtitle)}</p>` : ''}
               
-              <!-- Location & Sponsor Pills -->
               <div class="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-400">
                 ${ad.sponsorTag ? `
                   <span class="inline-flex items-center gap-1 text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-md">
@@ -1304,37 +1575,29 @@ interface AdsApiService {
 
           </div>
 
-          <!-- Bottom Actions Bar -->
           <div class="mt-3.5 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-            <!-- Left: Simulator Preview button -->
             <button class="btn-preview-sim inline-flex items-center gap-1 text-xs font-medium ${isSelectedInSim ? 'text-sky-400 font-bold' : 'text-slate-400 hover:text-sky-400'} transition" data-id="${escapeHtml(ad.id)}">
               <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
               <span>${isSelectedInSim ? 'Viewing in Phone' : 'Preview in Phone'}</span>
             </button>
 
-            <!-- Right: Reorder / Duplicate / Edit / Delete -->
             <div class="flex items-center gap-1">
-              <!-- Move Up -->
               <button class="btn-move-up p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Up" data-id="${escapeHtml(ad.id)}" ${index === 0 ? 'disabled style="opacity:0.3"' : ''}>
                 <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
               </button>
 
-              <!-- Move Down -->
               <button class="btn-move-down p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Move Down" data-id="${escapeHtml(ad.id)}" ${index === AppState.doc.ads.length - 1 ? 'disabled style="opacity:0.3"' : ''}>
                 <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
               </button>
 
-              <!-- Duplicate -->
               <button class="btn-duplicate p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition" title="Duplicate Ad" data-id="${escapeHtml(ad.id)}">
                 <i data-lucide="copy" class="w-3.5 h-3.5"></i>
               </button>
 
-              <!-- Edit -->
               <button class="btn-edit p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition" title="Edit Ad" data-id="${escapeHtml(ad.id)}">
                 <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
               </button>
 
-              <!-- Delete -->
               <button class="btn-delete p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition" title="Delete Ad" data-id="${escapeHtml(ad.id)}">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
               </button>
@@ -1345,7 +1608,7 @@ interface AdsApiService {
         adsContainer.appendChild(card);
       });
 
-      // Attach event listeners to card elements
+      // Listeners
       document.querySelectorAll('.ad-checkbox').forEach(cb => {
         cb.addEventListener('change', (e) => {
           const id = e.target.dataset.id;
@@ -1501,7 +1764,6 @@ interface AdsApiService {
       }
 
       previewModeTitle.textContent = `${ad.type ? ad.type.toUpperCase() : 'BANNER'} PREVIEW`;
-      const isVideo = ad.type === 'video' || (ad.mediaUrl && ad.mediaUrl.endsWith('.mp4'));
 
       // 1. BANNER AD VIEW
       if (ad.type === 'banner') {
@@ -1677,7 +1939,6 @@ interface AdsApiService {
       modalSubtitle.textContent = `Adding ad to ${AppState.currentScope.toUpperCase()} payload`;
       btnSubmitText.textContent = 'Create Ad';
 
-      // Auto generate suggested ID
       const prefix = AppState.currentScope.toLowerCase() === 'global' ? 'global' : AppState.currentScope.toLowerCase().slice(0, 3);
       formId.value = `${prefix}_banner_${Math.random().toString(36).slice(2, 6)}`;
       formTitle.value = '';
@@ -1692,7 +1953,6 @@ interface AdsApiService {
       formRating.value = 4.8;
       formIsDismissible.checked = true;
 
-      // Select banner type by default
       const bannerRadio = document.querySelector('input[name="formAdType"][value="banner"]');
       if (bannerRadio) bannerRadio.checked = true;
 
@@ -1734,7 +1994,6 @@ interface AdsApiService {
     document.getElementById('btnCloseModal').addEventListener('click', () => adModal.classList.add('hidden'));
     document.getElementById('btnCancelForm').addEventListener('click', () => adModal.classList.add('hidden'));
 
-    // Preset Sample Pickers inside Modal
     document.getElementById('btnPresetImageSample').addEventListener('click', () => {
       formMediaUrl.value = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
     });
@@ -1768,7 +2027,6 @@ interface AdsApiService {
       if (!Array.isArray(AppState.doc.ads)) AppState.doc.ads = [];
 
       if (formMode.value === 'create') {
-        // Check duplicate ID
         if (AppState.doc.ads.some(a => a.id === adData.id)) {
           showToast(`Ad ID "${adData.id}" already exists. Please choose a unique ID.`, 'error');
           return;
@@ -1806,7 +2064,6 @@ interface AdsApiService {
         AppState.cities.push(cityName);
       }
 
-      // Try registering on server
       try {
         await fetch('/admin/cities', {
           method: 'POST',
@@ -1992,11 +2249,22 @@ data class AdItem(
     });
     document.getElementById('btnCloseSettings').addEventListener('click', () => settingsModal.classList.add('hidden'));
 
-    document.getElementById('btnSaveSettings').addEventListener('click', () => {
-      AppState.token = adminTokenInput.value.trim();
-      localStorage.setItem('swot_admin_token', AppState.token);
+    document.getElementById('btnSaveSettings').addEventListener('click', async () => {
+      const updated = adminTokenInput.value.trim();
+      if (!updated) {
+        showToast('Token cannot be empty.', 'error');
+        return;
+      }
+      const valid = await verifyToken(updated);
+      if (!valid) {
+        showToast('Token verification failed with server.', 'error');
+        return;
+      }
+      AppState.token = updated;
+      localStorage.setItem('swot_admin_token', updated);
+      authTokenPreview.textContent = maskToken(updated);
       settingsModal.classList.add('hidden');
-      showToast('Settings saved.', 'info');
+      showToast('Admin token updated and verified!', 'success');
       syncToCloud(true);
     });
 
